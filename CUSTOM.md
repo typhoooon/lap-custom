@@ -34,7 +34,7 @@ areas:
 | Setting | Value |
 | :-- | :-- |
 | `productName` | `Lap Custom` |
-| `version` | `0.3.3-custom.1` |
+| `version` | `0.3.3-custom.2` |
 | `identifier` | `dev.typhoon.lapcustom` |
 | updater endpoints | none (auto-update check defaults off) |
 | update artifacts | disabled |
@@ -74,7 +74,7 @@ cargo tauri build
 VC++ 运行库最低版本检查。MSI 会包含 models、ffmpeg 和 ONNX Runtime DLL。
 
 WiX 的 MSI ProductVersion 只接受数字版本，因此 `tauri.windows.conf.json` 里的
-`bundle.windows.wix.version` 设为 `0.3.3.1`；应用版本仍是 `0.3.3-custom.1`，
+`bundle.windows.wix.version` 设为 `0.3.3.2`；应用版本仍是 `0.3.3-custom.2`，
 安装包靠 productName `Lap Custom` 和 Release tag 与官方区分。
 
 下面的本地交叉编译流程仅为历史记录，已不再作为主要构建方式。
