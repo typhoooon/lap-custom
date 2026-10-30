@@ -21,8 +21,13 @@
   "bundle": {
     "windows": {
       "wix": {
-        "fragmentPaths": ["windows/vc-runtime.wxs"],
-        "componentGroupRefs": ["LapVcRuntimeCheck"]
+        "fragmentPaths": [
+          "windows/vc-runtime.wxs"
+        ],
+        "componentGroupRefs": [
+          "LapVcRuntimeCheck"
+        ],
+        "version": "0.3.3.1"
       }
     },
     "resources": {
