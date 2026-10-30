@@ -1,5 +1,7 @@
+import { watch } from 'vue';
 import { config } from '@/common/config';
 import { selectPreviewCandidates } from '@/common/previewSelection';
+import { isMediaViewerWindowOpen, isPreviewFullScreen, isThumbnailPreviewSuspended } from '@/common/viewerState';
 
 /**
  * Coordinates auto-playing thumbnail video previews.
@@ -26,6 +28,8 @@ type PreviewCandidateSeed = Pick<PreviewCandidate, 'id' | 'isEligible' | 'start'
 const candidates = new Map<string, PreviewCandidate>();
 const active = new Set<string>();
 let scheduled = false;
+let suspendedUntil = 0;
+let resumeTimer: ReturnType<typeof setTimeout> | null = null;
 
 function now(): number {
   return typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -39,7 +43,11 @@ function autoplayEnabled(): boolean {
 
 function autoplayLimit(): number {
   const value = Math.round(Number(config.settings.grid.videoAutoplayLimit));
-  return Math.max(1, Math.min(16, Number.isFinite(value) ? value : 8));
+  if (!Number.isFinite(value)) return 8;
+  // 0 means "no explicit cap". Visibility is still enforced by the candidate
+  // filter below, so off-screen thumbnails never decode.
+  if (value <= 0) return Number.POSITIVE_INFINITY;
+  return Math.min(64, value);
 }
 
 function schedule(): void {
@@ -59,7 +67,10 @@ function run(): void {
   );
 
   const next = new Set(
-    autoplayEnabled() && !(typeof document !== 'undefined' && document.hidden)
+    autoplayEnabled()
+      && !isThumbnailPreviewSuspended()
+      && currentTime >= suspendedUntil
+      && !(typeof document !== 'undefined' && document.hidden)
       ? selectPreviewCandidates(eligible, autoplayLimit()).map((candidate) => candidate.id)
       : [],
   );
@@ -164,10 +175,38 @@ export function releasePreviewSlot(id: string): void {
   schedule();
 }
 
+/**
+ * Stop every preview immediately and keep the scheduler quiet for a short
+ * transition. Used when the query context (album, collection, library view…)
+ * changes: the old thumbnails are about to unmount and must release decoders
+ * and audio before the new grid registers.
+ */
+export function pauseAllPreviewVideos(suspendMs = 400): void {
+  suspendedUntil = Math.max(suspendedUntil, now() + Math.max(0, suspendMs));
+  for (const id of [...active]) {
+    active.delete(id);
+    try {
+      candidates.get(id)?.stop();
+    } catch {
+      // The old thumbnail may already be tearing down.
+    }
+  }
+  if (resumeTimer) clearTimeout(resumeTimer);
+  resumeTimer = setTimeout(() => {
+    resumeTimer = null;
+    schedule();
+  }, Math.max(0, suspendedUntil - now()) + 20);
+  schedule();
+}
+
 /** Re-evaluate after the autoplay setting or concurrency limit changes. */
 export function refreshPreviewScheduler(): void {
   schedule();
 }
+
+// Stop previews while a dedicated image/video viewer window is in front or an
+// inline preview is fullscreen, then resume the visible candidates afterwards.
+watch([isMediaViewerWindowOpen, isPreviewFullScreen], () => schedule());
 
 // Do not decode videos while the window is hidden (minimized / another tab).
 if (typeof document !== 'undefined') {

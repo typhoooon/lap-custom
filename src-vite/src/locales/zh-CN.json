@@ -502,7 +502,9 @@
       "back": "返回",
       "scanning": "扫描中…",
       "scan_paused": "扫描已暂停",
-      "scan_queued": "排队等待扫描"
+      "scan_queued": "排队等待扫描",
+      "video_autoplay_on": "暂停缩略图自动播放",
+      "video_autoplay_off": "恢复缩略图自动播放"
     }
   },
   "info_panel": {
@@ -1521,6 +1523,7 @@
       "section_video_preview": "缩略图视频预览",
       "video_autoplay": "自动播放可见视频",
       "video_autoplay_limit": "同时播放上限",
+      "video_autoplay_limit_hint": "0 = 不限制（仍然只播放屏幕内可见的缩略图）；关闭自动播放请用上方开关。",
       "video_preview_loop": "循环预览",
       "video_preview_volume": "预览音量",
       "video_mute": "静音这个视频",

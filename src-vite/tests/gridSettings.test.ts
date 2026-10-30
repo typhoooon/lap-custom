@@ -37,7 +37,7 @@ test('out-of-range and corrupt values are clamped', () => {
   assert.equal(grid.enhancedMasonry.adaptiveSpan, false);
   assert.equal(grid.enhancedMasonry.spanThreshold, 1.4);
   assert.equal(grid.videoAutoplay, false);
-  assert.equal(grid.videoAutoplayLimit, 16);
+  assert.equal(grid.videoAutoplayLimit, 64);
   assert.equal(grid.videoPreviewLoop, false);
   assert.equal(grid.videoPreviewVolume, 1);
 });
@@ -56,4 +56,8 @@ test('explicit false/zero values are preserved where valid', () => {
   assert.equal(grid.enhancedMasonry.maxSpan, 1);
   assert.equal(grid.videoAutoplayLimit, 4);
   assert.equal(grid.videoPreviewVolume, 0);
+
+  // Zero is a valid limit: no explicit cap (visibility still applies).
+  const unlimited = normalizeGridSettings({ videoAutoplayLimit: 0 });
+  assert.equal(unlimited.videoAutoplayLimit, 0);
 });

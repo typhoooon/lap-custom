@@ -448,6 +448,7 @@ import { defineAsyncComponent, ref, computed, watch, onMounted, onUpdated, onBef
 import { useI18n } from 'vue-i18n';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { runPreviewWindowOperation, recoverPreviewWindowFocus } from '@/common/previewWindow';
+import { isPreviewFullScreen } from '@/common/viewerState';
 import { config, libConfig } from '@/common/config';
 import { useToast } from '@/common/toast';
 import { isWin, isMac, isLinux, getSlideShowInterval } from '@/common/utils';
@@ -763,6 +764,7 @@ async function exitPreviewFullScreen() {
     try {
       await restorePreviewWindow();
       previewFullScreen.value = false;
+      isPreviewFullScreen.value = false;
       // Closing a preview restores the window without forgetting its viewing mode.
       if (!previewDisposed) config.mediaViewer.isFullScreen = false;
       stopPreviewResizeListener();
@@ -804,6 +806,7 @@ async function toggleFullScreen() {
         return;
       }
       previewFullScreen.value = true;
+      isPreviewFullScreen.value = true;
       unlistenPreviewResize = await appWindow.onResized(async () => {
         if (!fullscreenBusy && previewFullScreen.value && !(await appWindow.isFullscreen())) {
           void exitPreviewFullScreen();
@@ -812,6 +815,8 @@ async function toggleFullScreen() {
       if (previewDisposed) {
         unlistenPreviewResize?.();
         await restorePreviewWindow();
+        previewFullScreen.value = false;
+        isPreviewFullScreen.value = false;
       } else {
         config.mediaViewer.isFullScreen = true;
       }
@@ -822,6 +827,7 @@ async function toggleFullScreen() {
         await restorePreviewWindow().catch(error => console.error('Failed to restore preview window', error));
       }
       previewFullScreen.value = false;
+      isPreviewFullScreen.value = false;
     } finally {
       fullscreenBusy = false;
     }

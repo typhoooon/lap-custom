@@ -55,6 +55,15 @@
       <!-- toolbar -->
       <div class="flex items-center gap-2 shrink-0">
 
+        <!-- thumbnail video autoplay -->
+        <TButton
+          :icon="isVideoAutoplayEnabled ? IconVideoPlay : IconVideoSlash"
+          :buttonSize="'medium'"
+          :selected="isVideoAutoplayEnabled"
+          :tooltip="isVideoAutoplayEnabled ? $t('toolbar.tooltip.video_autoplay_on') : $t('toolbar.tooltip.video_autoplay_off')"
+          @click="toggleVideoAutoplay"
+        />
+
         <!-- file type options -->
         <DropDownSelect
           :icon="IconFilter"
@@ -825,6 +834,8 @@ import MessageBox from '@/components/MessageBox.vue';
 import ModalDialog from '@/components/ModalDialog.vue';
 import RefreshFileInfoDialog from '@/components/RefreshFileInfoDialog.vue';
 import { fileInfoRevision } from '@/common/fileInfoRefresh';
+import { isMediaViewerWindowOpen } from '@/common/viewerState';
+import { pauseAllPreviewVideos, refreshPreviewScheduler } from '@/common/videoPreviewScheduler';
 import IndexRecoveryDialog from '@/components/IndexRecoveryDialog.vue';
 import MoveTo from '@/components/MoveTo.vue';
 import TButton from '@/components/TButton.vue';
@@ -892,6 +903,8 @@ import {
   IconSortingShuffle,
   IconFilter,
   IconPanelMax,
+  IconVideoPlay,
+  IconVideoSlash,
 } from '@/common/icons';
 
 const thumbnailPlaceholder = new URL('@/assets/images/image-file.png', import.meta.url).href;
@@ -1144,8 +1157,9 @@ type ImageViewerSession =
 // refreshes must not replace that source with the live file list.
 const imageViewerSession = ref<ImageViewerSession>({ mode: 'normal' });
 // True while the separate image viewer window exists, so selection changes can
-// push updates without an async window lookup when no viewer is open.
-const isImageViewerWindowOpen = ref(false);
+// push updates without an async window lookup when no viewer is open. Shared
+// with the thumbnail preview scheduler so previews pause behind the viewer.
+const isImageViewerWindowOpen = isMediaViewerWindowOpen;
 
 function removeDeletedFilesFromImageViewerSession(fileIds: number[]) {
   const session = imageViewerSession.value;
@@ -6357,6 +6371,9 @@ watch(
     // Replacing smartAlbums creates a new outer array even if these values match.
     if (previousValues && values.every((value, index) => value === previousValues[index])) return;
     contentQueryRefreshPending = true;
+    // The old grid is about to be replaced: stop its video decoders and audio
+    // now, before the new album/view mounts its own thumbnails.
+    pauseAllPreviewVideos();
     // Clear active adjustments when the file list changes to avoid unnecessary confirmation dialogs
     uiStore.clearActiveAdjustments();
 
@@ -10574,6 +10591,13 @@ const isFixedAiResultView = computed(() =>
   isSimilaritySortedResultView.value
 );
 
+const isVideoAutoplayEnabled = computed(() => config.settings.grid.videoAutoplay !== false);
+
+function toggleVideoAutoplay() {
+  config.settings.grid.videoAutoplay = !isVideoAutoplayEnabled.value;
+  refreshPreviewScheduler();
+}
+
 const isSimilaritySortedResultView = computed(() =>
   tempViewMode.value === 'similar' ||
   (libConfig.activePane !== 'collection' && isAiSearchMode.value)
@@ -10937,6 +10961,10 @@ async function openImageViewer(
       imageWindow.once('tauri://close-requested', () => {
         isImageViewerWindowOpen.value = false;
         imageWindow?.close();
+      });
+
+      imageWindow.once('tauri://destroyed', () => {
+        isImageViewerWindowOpen.value = false;
       });
 
       imageWindow.once('tauri://error', (e) => {

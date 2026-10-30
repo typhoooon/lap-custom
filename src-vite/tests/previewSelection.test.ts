@@ -26,6 +26,8 @@ test('limit changes and degenerate inputs are handled', () => {
   assert.deepEqual(selectPreviewCandidates(items, -5), []);
   assert.deepEqual(selectPreviewCandidates([], 8), []);
   assert.equal(selectPreviewCandidates(items, 99).length, 2);
+  // The scheduler passes Infinity for the "no explicit cap" setting.
+  assert.equal(selectPreviewCandidates(items, Number.POSITIVE_INFINITY).length, 2);
 });
 
 test('selection is deterministic for equal priorities', () => {

@@ -88,6 +88,7 @@
       <div
         v-if="canPreviewVideo && (showVideoPreview || isHovered)"
         class="absolute right-7 top-0.5 z-30 flex flex-col items-end"
+        :class="isVideoPreviewAudible ? 'visible' : 'invisible group-hover:visible'"
         @pointerdown.stop
         @click.stop
         @dblclick.stop
@@ -95,14 +96,14 @@
       >
         <button
           type="button"
-          class="thumb-badge cursor-pointer"
+          class="btn btn-ghost btn-xs btn-square rounded-box border-0 bg-base-300/30 hover:bg-base-100/30 cursor-pointer"
           :class="isVideoPreviewAudible ? 'text-primary' : 'text-base-content/70'"
           :title="isVideoPreviewAudible ? t('settings.grid.video_mute') : t('settings.grid.video_unmute')"
           :aria-label="isVideoPreviewAudible ? t('settings.grid.video_mute') : t('settings.grid.video_unmute')"
           @click.stop="togglePreviewAudio"
         >
-          <IconVolumeHigh v-if="isVideoPreviewAudible" class="h-3.5 w-3.5" />
-          <IconVolumeMute v-else class="h-3.5 w-3.5" />
+          <IconVolumeHigh v-if="isVideoPreviewAudible" class="w-4 h-4" />
+          <IconVolumeMute v-else class="w-4 h-4" />
         </button>
         <div
           v-if="activePreviewAudioId === previewCandidateId && containerWidth >= 96"
@@ -301,6 +302,7 @@ import {
   setPreviewAudioVolume,
 } from '@/common/videoPreviewAudio';
 import { useFileMenuItems } from '@/common/fileMenu';
+import { isMediaViewerWindowOpen, isPreviewFullScreen, isThumbnailPreviewSuspended } from '@/common/viewerState';
 
 import {
   IconMore,
@@ -539,11 +541,24 @@ watch(() => [props.file.file_path, props.file.live_photo_video_path], () => {
   stopAnimatedImagePreview();
 });
 
+watch([isMediaViewerWindowOpen, isPreviewFullScreen], ([viewerOpen, previewFullScreen]) => {
+  if (!viewerOpen && !previewFullScreen) return;
+  // A viewer owns the screen (and may be playing the same video). Never keep
+  // decoding thumbnails behind it.
+  stopVideoPreview('all', true);
+  releaseClaimedAudio();
+  stopAnimatedImagePreview();
+});
+
 watch(() => [config.settings.grid.videoAutoplay, config.settings.grid.videoAutoplayLimit], () => {
   // A hover preview from the previous (disabled) mode must not keep playing
   // outside the scheduler once autoplay is enabled.
   if (isAutoplayPreviewEnabled() && previewOwner.value === 'hover') {
     stopVideoPreview('all', true);
+  } else if (!isAutoplayPreviewEnabled() && isHovered.value) {
+    // Turning autoplay off while the pointer is already over this thumbnail
+    // should fall back to the hover preview immediately.
+    void startVideoPreview('hover');
   }
   refreshPreviewScheduler();
 });
@@ -574,6 +589,7 @@ watch(showVideoPreview, async (show) => {
 
 function startMediaPreview() {
   isHovered.value = true;
+  if (isThumbnailPreviewSuspended()) return;
   if (!canPreviewVideo.value && !canPreviewAnimatedImage.value) return;
 
   claimHoverPreview(stopMediaPreview);
@@ -680,6 +696,9 @@ function startVideoPreview(
   source: 'hover' | 'autoplay',
   immediate = false,
 ): Promise<boolean> {
+  if (isThumbnailPreviewSuspended()) {
+    return Promise.resolve(false);
+  }
   if (!canPreviewVideo.value || showVideoPreview.value) {
     return Promise.resolve(showVideoPreview.value);
   }

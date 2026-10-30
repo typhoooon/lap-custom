@@ -253,13 +253,21 @@
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.videoAutoplay" />
             </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.grid.video_autoplay_limit') }}</div>
+                <div class="text-xs text-base-content/50">{{ $t('settings.grid.video_autoplay_limit_hint') }}</div>
               </div>
-              <select class="select select-bordered select-sm min-w-32" v-model.number="config.settings.grid.videoAutoplayLimit">
-                <option v-for="value in videoAutoplayLimitOptions" :key="value" :value="value">{{ value }}</option>
-              </select>
+              <input
+                type="number"
+                class="input input-bordered input-sm w-24 text-right tabular-nums"
+                min="0"
+                max="64"
+                step="1"
+                v-model.number="config.settings.grid.videoAutoplayLimit"
+                @change="normalizeVideoAutoplayLimit"
+                @blur="normalizeVideoAutoplayLimit"
+              />
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
@@ -1144,7 +1152,12 @@ const enhancedMasonrySpanOptions = computed(() =>
   }))
 );
 
-const videoAutoplayLimitOptions = [4, 6, 8, 10, 12, 16];
+function normalizeVideoAutoplayLimit() {
+  const value = Math.round(Number(config.settings.grid.videoAutoplayLimit));
+  config.settings.grid.videoAutoplayLimit = Number.isFinite(value)
+    ? Math.max(0, Math.min(64, value))
+    : 8;
+}
 
 const mapMarkerSizeOptions = computed(() => {
   const labels = localeMsg.value.settings.grid.map_marker_size_options;

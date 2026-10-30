@@ -192,7 +192,7 @@ export const useConfigStore = defineStore('configStore', {
 
         // Fork-only thumbnail video preview options.
         videoAutoplay: true,           // play visible video thumbnails automatically
-        videoAutoplayLimit: 8,         // max concurrent autoplay decoders (4-16)
+        videoAutoplayLimit: 8,         // max concurrent autoplay decoders (0 = no cap; visible only)
         videoPreviewLoop: true,        // loop hover/autoplay previews
         videoPreviewVolume: 0.8,       // preview volume (0-1) when the user unmutes one
       },

@@ -14,10 +14,17 @@ areas:
      the base size.
 2. **Thumbnail video previews**
    - Visible video thumbnails autoplay muted; off-screen previews pause.
-   - A concurrency cap (default 8) keeps small-thumbnail views responsive.
-   - Each visible video gets a volume button. Only one preview can be audible at
-     a time, and the volume slider controls it.
+   - Simultaneous previews is a number setting (default 8, `0` = no explicit
+     cap). Autoplay still only starts thumbnails inside the viewport.
+   - A toolbar button left of the filter toggles thumbnail autoplay globally;
+     the Settings switch does the same.
+   - Each hovered video gets a volume button aligned with the file menu. It
+     hides with the menu while the pointer is away, but stays visible while
+     that video is the audible one. Only one preview can be audible at a time.
    - Preview looping is a setting.
+   - Previews stop and release their decoders/audio when the album or view
+     changes, when the image viewer window is open, and while an inline preview
+     is fullscreen.
 3. **Library password lock (frontend only)**
    - Set/change/remove a password from **Manage libraries** (new-library flow or
      the row context menu).
@@ -34,7 +41,7 @@ areas:
 | Setting | Value |
 | :-- | :-- |
 | `productName` | `Lap Custom` |
-| `version` | `0.3.3-custom.2` |
+| `version` | `0.3.3-custom.3` |
 | `identifier` | `dev.typhoon.lapcustom` |
 | updater endpoints | none (auto-update check defaults off) |
 | update artifacts | disabled |
@@ -74,7 +81,7 @@ cargo tauri build
 VC++ 运行库最低版本检查。MSI 会包含 models、ffmpeg 和 ONNX Runtime DLL。
 
 WiX 的 MSI ProductVersion 只接受数字版本，因此 `tauri.windows.conf.json` 里的
-`bundle.windows.wix.version` 设为 `0.3.3.2`；应用版本仍是 `0.3.3-custom.2`，
+`bundle.windows.wix.version` 设为 `0.3.3.3`；应用版本仍是 `0.3.3-custom.3`，
 安装包靠 productName `Lap Custom` 和 Release tag 与官方区分。
 
 下面的本地交叉编译流程仅为历史记录，已不再作为主要构建方式。

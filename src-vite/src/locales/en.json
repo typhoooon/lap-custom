@@ -502,7 +502,9 @@
       "back": "Back",
       "scanning": "Scanning…",
       "scan_paused": "Scan paused",
-      "scan_queued": "Queued for scan"
+      "scan_queued": "Queued for scan",
+      "video_autoplay_on": "Pause thumbnail autoplay",
+      "video_autoplay_off": "Resume thumbnail autoplay"
     }
   },
   "info_panel": {
@@ -1521,6 +1523,7 @@
       "section_video_preview": "Thumbnail video previews",
       "video_autoplay": "Auto-play visible videos",
       "video_autoplay_limit": "Simultaneous previews",
+      "video_autoplay_limit_hint": "0 = no cap (visible thumbnails only). Use the switch above to turn autoplay off.",
       "video_preview_loop": "Loop previews",
       "video_preview_volume": "Preview volume",
       "video_mute": "Mute this video",
