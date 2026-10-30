@@ -1463,6 +1463,8 @@
       "remember_scroll_position_hint": "切换回相册时回到上次的位置，而不是最顶上。",
       "per_folder_size": "按文件夹分别记住网格大小",
       "per_folder_size_hint": "关闭：所有文件夹共用一个网格大小。开启：每个文件夹记住自己的滑块值。",
+      "per_folder_sort": "按文件夹分别记住排序/筛选",
+      "per_folder_sort_hint": "关闭：所有文件夹共用同一套排序、分组和文件类型筛选。开启：每个文件夹记住自己的工具栏选择。",
       "scaling_options": [
         "适应整张照片",
         "裁剪填充",

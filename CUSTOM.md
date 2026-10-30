@@ -15,8 +15,15 @@ areas:
    - The grid-size slider's upper range is larger, so a window can show only
      two or three columns. An optional "remember grid size per folder" setting
      stores each folder's slider value; the default is one size everywhere.
+   - An optional "remember sort/filter per folder" setting stores each folder's
+     sort field/order, grouping and file-type filter. The default is one set of
+     toolbar choices everywhere; global values remain the fallback.
    - Album/folder scroll positions are remembered by default. A setting can
      switch back to always starting at the top.
+   - All per-folder values (size, scroll, sort/filter/group) share one sparse
+     localStorage key, `lap_custom_folder_view_state_v1`; the old
+     `lap_custom_grid_size_overrides` / `lap_custom_scroll_positions` keys are
+     migrated automatically.
 2. **Thumbnail video previews**
    - Visible video thumbnails autoplay muted; off-screen previews pause.
    - Simultaneous previews is a number setting (default 8, `0` = no explicit
@@ -61,7 +68,7 @@ areas:
 | Setting | Value |
 | :-- | :-- |
 | `productName` | `Lap Custom` |
-| `version` | `0.3.3-custom.5` |
+| `version` | `0.3.3-custom.6` |
 | `identifier` | `dev.typhoon.lapcustom` |
 | updater endpoints | none (auto-update check defaults off) |
 | update artifacts | disabled |
@@ -101,7 +108,7 @@ cargo tauri build
 VC++ 运行库最低版本检查。MSI 会包含 models、ffmpeg 和 ONNX Runtime DLL。
 
 WiX 的 MSI ProductVersion 只接受数字版本，因此 `tauri.windows.conf.json` 里的
-`bundle.windows.wix.version` 设为 `0.3.3.5`；应用版本仍是 `0.3.3-custom.5`，
+`bundle.windows.wix.version` 设为 `0.3.3.6`；应用版本仍是 `0.3.3-custom.6`，
 安装包靠 productName `Lap Custom` 和 Release tag 与官方区分。
 
 下面的本地交叉编译流程仅为历史记录，已不再作为主要构建方式。

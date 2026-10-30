@@ -1463,6 +1463,8 @@
       "remember_scroll_position_hint": "When returning to an album, go back to where you left it instead of the top.",
       "per_folder_size": "Remember grid size per folder",
       "per_folder_size_hint": "Off: one grid size everywhere. On: each folder keeps its own slider value.",
+      "per_folder_sort": "Remember sort/filter per folder",
+      "per_folder_sort_hint": "Off: one sort, grouping and file-type filter everywhere. On: each folder keeps its own toolbar choices.",
       "scaling_options": [
         "Fit entire photo",
         "Crop to fill",

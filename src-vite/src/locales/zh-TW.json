@@ -1463,6 +1463,8 @@
       "remember_scroll_position_hint": "切換回相簿時回到上次的位置，而不是最上方。",
       "per_folder_size": "按資料夾分別記住網格大小",
       "per_folder_size_hint": "關閉：所有資料夾共用一個網格大小。開啟：每個資料夾記住自己的滑桿值。",
+      "per_folder_sort": "按資料夾分別記住排序/篩選",
+      "per_folder_sort_hint": "關閉：所有資料夾共用同一套排序、分組和檔案類型篩選。開啟：每個資料夾記住自己的工具列選擇。",
       "scaling_options": [
         "完整顯示相片",
         "裁剪填滿",

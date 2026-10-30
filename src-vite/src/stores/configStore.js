@@ -172,6 +172,7 @@ export const useConfigStore = defineStore('configStore', {
         sizePosition: 0,         // grid size slider position (0-1)
         rememberScrollPosition: true, // returning to an album restores its last scroll offset
         perFolderSize: false,    // remember the grid-size slider per album/folder instead of globally
+        perFolderSort: false,    // remember sort/filter/group per album/folder instead of globally
         style: 0,                // 0: card, 1: tile, 2: justified, 3: masonry, 4: balanced, 5: enhanced masonry
         viewMode: 'grid',        // grid | filmstrip | map
         scaling: 1,              // 0: Fit Entire Image, 1: Crop to Fill, 2: Stretch to Fill

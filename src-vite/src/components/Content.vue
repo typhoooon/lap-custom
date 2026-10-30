@@ -836,8 +836,16 @@ import MessageBox from '@/components/MessageBox.vue';
 import ModalDialog from '@/components/ModalDialog.vue';
 import RefreshFileInfoDialog from '@/components/RefreshFileInfoDialog.vue';
 import { fileInfoRevision } from '@/common/fileInfoRefresh';
-import { getStoredGridSizePosition, setStoredGridSizePosition } from '@/common/gridSizeOverrides';
-import { getStoredScrollTop, setStoredScrollTop } from '@/common/scrollPositions';
+import {
+  ensureSearchDefaults,
+  flushFolderView,
+  getFolderView,
+  getSearchDefaults,
+  makeFolderViewKey,
+  patchFolderView,
+  setSearchDefaults,
+  type FolderSearchState,
+} from '@/common/folderViewState';
 import { isMediaViewerWindowOpen } from '@/common/viewerState';
 import {
   isPreviewPlaybackPaused,
@@ -2607,16 +2615,18 @@ function scheduleLayoutRefresh() {
 }
 const gap = 8;                    // Gap between items (must match GridView)
 const gridSizeProfile = computed(() => thumbnailProfile(config.settings.thumbnailSize));
-const gridSizeContextKey = computed(() => {
-  if (!config.settings.grid.perFolderSize) return '';
-  const albumId = Number(libConfig.album?.id || 0);
-  if (!albumId) return '';
-  return `${libConfig._libraryId || ''}:${albumId}:${libConfig.album?.folderPath || ''}`;
-});
+const folderViewKey = computed(() => makeFolderViewKey(
+  libConfig._libraryId,
+  libConfig.album?.id,
+  libConfig.album?.folderPath,
+));
+const folderViewEntry = computed(() => (
+  folderViewKey.value ? getFolderView(folderViewKey.value) : undefined
+));
 const effectiveGridSizePosition = computed(() => {
-  const stored = gridSizeContextKey.value
-    ? getStoredGridSizePosition(gridSizeContextKey.value)
-    : null;
+  const stored = config.settings.grid.perFolderSize
+    ? folderViewEntry.value?.sizePosition
+    : undefined;
   return stored != null ? stored : normalizeGridSizePosition(config.settings.grid.sizePosition);
 });
 const gridSize = computed(() =>
@@ -2626,8 +2636,8 @@ const gridSizePosition = computed({
   get: () => Math.round(effectiveGridSizePosition.value * 100),
   set: (value) => {
     const position = normalizeGridSizePosition(Number(value) / 100);
-    if (gridSizeContextKey.value) {
-      setStoredGridSizePosition(gridSizeContextKey.value, position);
+    if (config.settings.grid.perFolderSize && folderViewKey.value) {
+      patchFolderView(folderViewKey.value, { sizePosition: position });
     } else {
       config.settings.grid.sizePosition = position;
     }
@@ -3910,6 +3920,15 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (scrollSaveTimer) {
+    clearTimeout(scrollSaveTimer);
+    scrollSaveTimer = null;
+  }
+  if (restorePendingTimer) {
+    clearTimeout(restorePendingTimer);
+    restorePendingTimer = null;
+  }
+  flushFolderView();
   fileImportDisposed = true;
   selectionAccessRequest++;
   if (selectionAccessTimer) clearTimeout(selectionAccessTimer);
@@ -4602,28 +4621,69 @@ function updateScrollPosition(currentScrollTop: number, currentScrollHeight: num
     }
 }
 
-function scrollContextKey(values: any[]): string {
-  const [libraryId, albumId, folderPath] = values;
-  const id = Number(albumId || 0);
-  if (!id) return '';
-  return `${libraryId || ''}:${id}:${folderPath || ''}`;
+function currentSearchState(): FolderSearchState {
+  return {
+    fileType: Number(config.search.fileType || 0),
+    sortType: Number(config.search.sortType || 0),
+    sortOrder: Number(config.search.sortOrder || 0),
+    groupBy: Number(config.search.groupBy || 0),
+  };
 }
 
-function currentScrollContextKey(): string {
-  return scrollContextKey([libConfig._libraryId, libConfig.album.id, libConfig.album.folderPath]);
+let applyingFolderSearch = false;
+
+function applyFolderSearch(values: Partial<FolderSearchState>): void {
+  const next = { ...getSearchDefaults(), ...values };
+  applyingFolderSearch = true;
+  config.search.fileType = next.fileType;
+  config.search.sortType = next.sortType;
+  config.search.sortOrder = next.sortOrder;
+  config.search.groupBy = next.groupBy;
+  nextTick(() => {
+    applyingFolderSearch = false;
+  });
 }
 
-function scheduleScrollSave(): void {
+// On first run the current global search settings become the folder defaults.
+ensureSearchDefaults(currentSearchState());
+
+// Apply the initial folder's saved search before the first content query.
+if (config.settings.grid.perFolderSort) {
+  const initialEntry = folderViewKey.value ? getFolderView(folderViewKey.value) : undefined;
+  applyFolderSearch(initialEntry?.search || {});
+}
+if (config.settings.grid.rememberScrollPosition && folderViewKey.value) {
+  const saved = getFolderView(folderViewKey.value)?.scrollTop;
+  if (saved != null) setPendingScrollRestore(saved);
+}
+
+function setPendingScrollRestore(value: number | null): void {
+  pendingRestoreScrollTop.value = value;
+  if (restorePendingTimer) {
+    clearTimeout(restorePendingTimer);
+    restorePendingTimer = null;
+  }
+  if (value == null) return;
+  restorePendingTimer = setTimeout(() => {
+    restorePendingTimer = null;
+    if (pendingRestoreScrollTop.value === value) pendingRestoreScrollTop.value = null;
+  }, 8000);
+}
+
+function scheduleScrollPatch(): void {
   if (!config.settings.grid.rememberScrollPosition) return;
   // The reset-to-top that precedes a restore must not overwrite the target
   // album's saved offset before the new content finishes loading.
   if (pendingRestoreScrollTop.value !== null) return;
-  if (scrollSaveTimer) clearTimeout(scrollSaveTimer);
-  scrollSaveKey = currentScrollContextKey();
+  if (!folderViewKey.value) return;
+  if (scrollSaveTimer) return;
+  scrollSaveKey = folderViewKey.value;
   scrollSaveTimer = setTimeout(() => {
     scrollSaveTimer = null;
-    if (scrollSaveKey) setStoredScrollTop(scrollSaveKey, lastKnownScrollTop);
-  }, 250);
+    if (scrollSaveKey) {
+      patchFolderView(scrollSaveKey, { scrollTop: lastKnownScrollTop });
+    }
+  }, 150);
 }
 
 watch(
@@ -4633,25 +4693,69 @@ watch(
       clearTimeout(scrollSaveTimer);
       scrollSaveTimer = null;
     }
+    const oldKey = previousValues
+      ? makeFolderViewKey(previousValues[0], previousValues[1], previousValues[2])
+      : '';
+    const newKey = makeFolderViewKey(values[0], values[1], values[2]);
+
+    // Persist the outgoing folder's live state before applying the new one.
+    if (oldKey && config.settings.grid.rememberScrollPosition) {
+      const previousEntry = getFolderView(oldKey);
+      if (lastKnownScrollTop > 0 || previousEntry?.scrollTop != null) {
+        patchFolderView(oldKey, { scrollTop: lastKnownScrollTop });
+      }
+    }
+    if (oldKey && config.settings.grid.perFolderSort) {
+      patchFolderView(oldKey, { search: currentSearchState() });
+    }
+
+    if (config.settings.grid.perFolderSort) {
+      const entry = newKey ? getFolderView(newKey) : undefined;
+      applyFolderSearch(entry?.search || {});
+    }
+
     scrollSaveKey = '';
+    pendingRestoreScrollTop.value = null;
     if (!config.settings.grid.rememberScrollPosition) {
-      pendingRestoreScrollTop.value = null;
       return;
     }
-    const oldKey = previousValues ? scrollContextKey(previousValues) : '';
-    const newKey = scrollContextKey(values);
-    if (oldKey && lastKnownScrollTop > 0) {
-      setStoredScrollTop(oldKey, lastKnownScrollTop);
-    }
     if (!newKey || newKey === oldKey) return;
-    const saved = getStoredScrollTop(newKey);
-    if (saved != null) {
-      pendingRestoreScrollTop.value = saved;
-      if (restorePendingTimer) clearTimeout(restorePendingTimer);
-      restorePendingTimer = setTimeout(() => {
-        restorePendingTimer = null;
-        if (pendingRestoreScrollTop.value === saved) pendingRestoreScrollTop.value = null;
-      }, 8000);
+    const saved = getFolderView(newKey)?.scrollTop;
+    if (saved != null) setPendingScrollRestore(saved);
+  },
+);
+
+// Toolbar/search changes: write to the current folder when per-folder sort is
+// on, otherwise keep the global settings (and its defaults) up to date.
+watch(
+  () => [
+    config.search.fileType,
+    config.search.sortType,
+    config.search.sortOrder,
+    config.search.groupBy,
+  ],
+  () => {
+    if (applyingFolderSearch) return;
+    const next = currentSearchState();
+    if (config.settings.grid.perFolderSort && folderViewKey.value) {
+      patchFolderView(folderViewKey.value, { search: next });
+    } else {
+      setSearchDefaults(next);
+    }
+  },
+);
+
+watch(
+  () => config.settings.grid.perFolderSort,
+  (perFolderSort) => {
+    if (perFolderSort) {
+      // The current global values become the defaults for folders without an
+      // override; then apply this folder's override if it has one.
+      setSearchDefaults(currentSearchState());
+      const entry = folderViewKey.value ? getFolderView(folderViewKey.value) : undefined;
+      applyFolderSearch(entry?.search || {});
+    } else {
+      setSearchDefaults(currentSearchState());
     }
   },
 );
@@ -4659,7 +4763,7 @@ watch(
 function handleGridScroll(event: any) {
   if (event && event.target) {
     lastKnownScrollTop = event.target.scrollTop;
-    scheduleScrollSave();
+    scheduleScrollPatch();
     updateScrollPosition(
         event.target.scrollTop,
         event.target.scrollHeight

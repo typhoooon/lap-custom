@@ -168,6 +168,9 @@ if (isMainWindow) {
   listen('settings-gridPerFolderSize-changed', (event) => {
     config.settings.grid.perFolderSize = event.payload
   })
+  listen('settings-gridPerFolderSort-changed', (event) => {
+    config.settings.grid.perFolderSort = event.payload
+  })
   listen('settings-gridThumbnailCorners-changed', (event) => {
     config.setGridThumbnailCorners(event.payload)
   })

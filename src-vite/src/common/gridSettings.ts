@@ -19,6 +19,7 @@ export function normalizeGridSettings(grid: any): any {
   grid.style = Math.round(clampSetting(grid.style, 0, 5, 0));
   grid.rememberScrollPosition = grid.rememberScrollPosition !== false;
   grid.perFolderSize = grid.perFolderSize === true;
+  grid.perFolderSort = grid.perFolderSort === true;
 
   const balanced = grid.balanced && typeof grid.balanced === 'object' ? grid.balanced : {};
   grid.balanced = {

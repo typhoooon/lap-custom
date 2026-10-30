@@ -7,6 +7,7 @@ test('missing fork settings receive defaults', () => {
   assert.equal(grid.style, 2);
   assert.equal(grid.rememberScrollPosition, true);
   assert.equal(grid.perFolderSize, false);
+  assert.equal(grid.perFolderSort, false);
   assert.deepEqual(grid.balanced, {
     portraitBoost: 0.3,
     maxRowHeightMultiplier: 1.5,
@@ -38,6 +39,7 @@ test('out-of-range and corrupt values are clamped', () => {
     videoPreviewProgressBar: false,
     rememberScrollPosition: false,
     perFolderSize: true,
+    perFolderSort: true,
   });
   assert.equal(grid.style, 5);
   assert.equal(grid.balanced.portraitBoost, 0.8);
@@ -54,6 +56,7 @@ test('out-of-range and corrupt values are clamped', () => {
   assert.equal(grid.videoPreviewProgressBar, false);
   assert.equal(grid.rememberScrollPosition, false);
   assert.equal(grid.perFolderSize, true);
+  assert.equal(grid.perFolderSort, true);
 });
 
 test('explicit false/zero values are preserved where valid', () => {

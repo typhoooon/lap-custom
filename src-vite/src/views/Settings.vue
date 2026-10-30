@@ -222,6 +222,13 @@
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.perFolderSize" />
             </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.grid.per_folder_sort') }}</div>
+                <div class="text-xs text-base-content/50">{{ $t('settings.grid.per_folder_sort_hint') }}</div>
+              </div>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.perFolderSort" />
+            </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.grid.thumbnail_corners') }}</div>
@@ -1767,6 +1774,9 @@ watch(() => config.settings.grid.rememberScrollPosition, (newValue) => {
 });
 watch(() => config.settings.grid.perFolderSize, (newValue) => {
   emit('settings-gridPerFolderSize-changed', newValue);
+});
+watch(() => config.settings.grid.perFolderSort, (newValue) => {
+  emit('settings-gridPerFolderSort-changed', newValue);
 });
 watch(() => config.settings.grid.thumbnailCorners, (newValue) => {
   emit('settings-gridThumbnailCorners-changed', newValue);
