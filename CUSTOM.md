@@ -67,9 +67,16 @@ bash scripts/download_ffmpeg_sidecar.sh linux x86_64
 cargo tauri build
 ```
 
-## Windows cross build (Linux host, cargo-xwin + MSVC + NSIS)
+## Windows packaging (GitHub Actions, MSVC + MSI)
+
+当前 Windows 安装包使用 GitHub Actions 的 Windows runner 构建 **MSI**，
+和官方项目一致；`tauri.windows.conf.json` 会带上 `windows/vc-runtime.wxs` 的
+VC++ 运行库最低版本检查。MSI 会包含 models、ffmpeg 和 ONNX Runtime DLL。
+
+下面的本地交叉编译流程仅为历史记录，已不再作为主要构建方式。
 
 Only the NSIS `-setup.exe` is cross-compilable; WiX `.msi` requires Windows.
+This fork now builds MSI on the GitHub Actions Windows runner instead.
 
 ### One-time setup
 

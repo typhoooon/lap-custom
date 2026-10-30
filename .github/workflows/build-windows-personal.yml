@@ -5,9 +5,15 @@ name: Build Windows (personal)
 # upstream repo or its release channels.
 
 on:
-  # Manual only for now: the Windows runtime issue is being diagnosed, so
-  # pushing should not start a build.
   workflow_dispatch:
+  push:
+    branches:
+      - feature/tuned-layouts-video-lock
+    paths:
+      - '.github/workflows/build-windows-personal.yml'
+      - '.github/tauri-ci.json'
+      - 'src-tauri/**'
+      - 'src-vite/**'
 
 permissions:
   # Needed to create the versioned GitHub Release and attach the installer.
@@ -60,6 +66,24 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+          vsversion: 2022
+
+      - name: Set MSI runtime prerequisite version
+        shell: pwsh
+        run: |
+          if (-not $env:VCToolsVersion) { throw "MSVC toolset version is missing." }
+          $toolset = [version]$env:VCToolsVersion.Trim()
+          $minimum = [version]::new($toolset.Major, $toolset.Minor, [Math]::Max(0, $toolset.Build), [Math]::Max(0, $toolset.Revision))
+          "TAURI_LAP_VC_RUNTIME_MIN_VERSION=$minimum" >> $env:GITHUB_ENV
+          Write-Host "MSI runtime minimum: $minimum"
+
+      - name: Remove ranlib from PATH
+        shell: pwsh
+        run: |
+          $paths = $env:PATH -split ';' | Where-Object {
+            $_ -and -not (Test-Path (Join-Path $_ 'ranlib.exe'))
+          }
+          "PATH=$($paths -join ';')" >> $env:GITHUB_ENV
 
       - name: Cache AI models
         id: cache-ai-models
@@ -84,16 +108,23 @@ jobs:
       - name: Install pinned Tauri CLI
         run: npm install -g @tauri-apps/cli@${{ env.TAURI_CLI_VERSION }}
 
-      - name: Build NSIS installer
+      - name: Build MSI installer
         # .github/tauri-ci.json clears beforeBuildCommand because the frontend
         # was already built above.
-        run: tauri build --target x86_64-pc-windows-msvc --bundles nsis --config "${{ github.workspace }}/.github/tauri-ci.json"
+        run: tauri build --target x86_64-pc-windows-msvc --bundles msi --config "${{ github.workspace }}/.github/tauri-ci.json"
+
+      - name: Verify MSI runtime prerequisite
+        shell: pwsh
+        run: |
+          $msis = @(Get-ChildItem -Path "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi" -Filter "*.msi" -File)
+          if ($msis.Count -ne 1) { throw "Expected exactly one Windows MSI." }
+          .\scripts\test_windows_msi_runtime.ps1 -MsiPath $msis[0].FullName
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: lap-custom-windows-x64
-          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
           if-no-files-found: error
           retention-days: 14
 
@@ -109,6 +140,6 @@ jobs:
             - 版本 / Version: 0.3.3-custom.1
             - 提交 / Commit: ${{ github.sha }}
             - 工作流 / Workflow run: ${{ github.run_number }}
-          files: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          files: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
           fail_on_unmatched_files: true
           make_latest: true
