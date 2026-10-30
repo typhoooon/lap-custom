@@ -1524,6 +1524,8 @@
       "video_autoplay": "自動播放可見影片",
       "video_autoplay_limit": "同時播放上限",
       "video_autoplay_limit_hint": "0 = 不限制（仍然只播放畫面上可見的縮圖）；關閉自動播放請用上方開關。",
+      "video_single_audio": "同時只允許一個影片出聲",
+      "video_single_audio_hint": "關閉後：同時播放的多個影片可以各自出聲。",
       "video_preview_loop": "循環預覽",
       "video_preview_volume": "預覽音量",
       "video_mute": "靜音這個影片",

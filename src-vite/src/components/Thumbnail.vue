@@ -106,7 +106,7 @@
           <IconVolumeMute v-else class="w-4 h-4" />
         </button>
         <div
-          v-if="activePreviewAudioId === previewCandidateId && containerWidth >= 96"
+          v-if="isPreviewAudioActive(previewCandidateId) && containerWidth >= 96"
           class="mt-1 flex items-center rounded-box bg-base-300/90 backdrop-blur px-1.5 py-1 shadow"
           @pointerdown.stop
           @click.stop
@@ -296,7 +296,7 @@ import {
   refreshPreviewScheduler,
 } from '@/common/videoPreviewScheduler';
 import {
-  activePreviewAudioId,
+  isPreviewAudioActive,
   claimPreviewAudio,
   releasePreviewAudio,
   setPreviewAudioVolume,
@@ -402,7 +402,7 @@ const canPreviewVideo = computed(() => (
   && (isLivePhoto.value || !props.file.cloud_only)
 ));
 const isVideoPreviewAudible = computed(() =>
-  activePreviewAudioId.value === previewCandidateId
+  isPreviewAudioActive(previewCandidateId)
   && Number(config.settings.grid.videoPreviewVolume) > 0
 );
 const isAutoplayPreviewEnabled = () => config.settings.grid.videoAutoplay !== false;
@@ -568,12 +568,12 @@ watch(() => config.settings.grid.videoPreviewLoop, (loop) => {
 });
 
 watch(() => config.settings.grid.videoPreviewVolume, (volume) => {
-  if (activePreviewAudioId.value !== previewCandidateId) return;
+  if (!isPreviewAudioActive(previewCandidateId)) return;
   setPreviewAudioVolume(Number(volume));
 });
 
-watch(activePreviewAudioId, (id) => {
-  if (id !== previewCandidateId) {
+watch(() => isPreviewAudioActive(previewCandidateId), (active) => {
+  if (!active) {
     wantsAudio.value = false;
     claimedAudioKey.value = null;
   }
@@ -621,7 +621,7 @@ function stopMediaPreview() {
 
 function releaseClaimedAudio() {
   const key = claimedAudioKey.value
-    || (activePreviewAudioId.value === previewCandidateId ? previewCandidateId : null);
+    || (isPreviewAudioActive(previewCandidateId) ? previewCandidateId : null);
   if (key) releasePreviewAudio(key);
   claimedAudioKey.value = null;
   wantsAudio.value = false;
@@ -667,7 +667,7 @@ function onPreviewVolumeInput(event: Event) {
   if (!target) return;
   const volume = Math.max(0, Math.min(1, Number(target.value)));
   config.settings.grid.videoPreviewVolume = volume;
-  if (activePreviewAudioId.value === previewCandidateId) {
+  if (isPreviewAudioActive(previewCandidateId)) {
     // Keep ownership at 0 so the slider stays visible and can be dragged back up.
     setPreviewAudioVolume(volume);
   }

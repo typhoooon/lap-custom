@@ -836,6 +836,7 @@ import RefreshFileInfoDialog from '@/components/RefreshFileInfoDialog.vue';
 import { fileInfoRevision } from '@/common/fileInfoRefresh';
 import { isMediaViewerWindowOpen } from '@/common/viewerState';
 import { pauseAllPreviewVideos, refreshPreviewScheduler } from '@/common/videoPreviewScheduler';
+import { enforceSingleAudioMode } from '@/common/videoPreviewAudio';
 import IndexRecoveryDialog from '@/components/IndexRecoveryDialog.vue';
 import MoveTo from '@/components/MoveTo.vue';
 import TButton from '@/components/TButton.vue';
@@ -10597,6 +10598,13 @@ function toggleVideoAutoplay() {
   config.settings.grid.videoAutoplay = !isVideoAutoplayEnabled.value;
   refreshPreviewScheduler();
 }
+
+watch(
+  () => config.settings.grid.videoSingleAudio,
+  (singleAudio) => {
+    if (singleAudio !== false) enforceSingleAudioMode();
+  },
+);
 
 const isSimilaritySortedResultView = computed(() =>
   tempViewMode.value === 'similar' ||

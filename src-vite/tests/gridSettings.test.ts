@@ -16,6 +16,7 @@ test('missing fork settings receive defaults', () => {
   });
   assert.equal(grid.videoAutoplay, true);
   assert.equal(grid.videoAutoplayLimit, 8);
+  assert.equal(grid.videoSingleAudio, true);
   assert.equal(grid.videoPreviewLoop, true);
   assert.equal(grid.videoPreviewVolume, 0.8);
 });
@@ -27,6 +28,7 @@ test('out-of-range and corrupt values are clamped', () => {
     enhancedMasonry: { maxSpan: 9, adaptiveSpan: false, spanThreshold: 'bad' },
     videoAutoplay: false,
     videoAutoplayLimit: 100,
+    videoSingleAudio: false,
     videoPreviewLoop: false,
     videoPreviewVolume: 3,
   });
@@ -38,6 +40,7 @@ test('out-of-range and corrupt values are clamped', () => {
   assert.equal(grid.enhancedMasonry.spanThreshold, 1.4);
   assert.equal(grid.videoAutoplay, false);
   assert.equal(grid.videoAutoplayLimit, 64);
+  assert.equal(grid.videoSingleAudio, false);
   assert.equal(grid.videoPreviewLoop, false);
   assert.equal(grid.videoPreviewVolume, 1);
 });

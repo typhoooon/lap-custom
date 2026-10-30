@@ -1524,6 +1524,8 @@
       "video_autoplay": "自动播放可见视频",
       "video_autoplay_limit": "同时播放上限",
       "video_autoplay_limit_hint": "0 = 不限制（仍然只播放屏幕内可见的缩略图）；关闭自动播放请用上方开关。",
+      "video_single_audio": "同时只允许一个视频出声",
+      "video_single_audio_hint": "关闭后：同时播放的多个视频可以各自出声。",
       "video_preview_loop": "循环预览",
       "video_preview_volume": "预览音量",
       "video_mute": "静音这个视频",

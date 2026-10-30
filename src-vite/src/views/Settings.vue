@@ -269,6 +269,13 @@
                 @blur="normalizeVideoAutoplayLimit"
               />
             </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.grid.video_single_audio') }}</div>
+                <div class="text-xs text-base-content/50">{{ $t('settings.grid.video_single_audio_hint') }}</div>
+              </div>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.videoSingleAudio" />
+            </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.grid.video_preview_loop') }}</div>
@@ -1758,6 +1765,7 @@ watch(
   [
     () => config.settings.grid.videoAutoplay,
     () => config.settings.grid.videoAutoplayLimit,
+    () => config.settings.grid.videoSingleAudio,
     () => config.settings.grid.videoPreviewLoop,
     () => config.settings.grid.videoPreviewVolume,
   ],
@@ -1765,6 +1773,7 @@ watch(
     emit('settings-gridVideoPreview-changed', {
       videoAutoplay: config.settings.grid.videoAutoplay,
       videoAutoplayLimit: config.settings.grid.videoAutoplayLimit,
+      videoSingleAudio: config.settings.grid.videoSingleAudio,
       videoPreviewLoop: config.settings.grid.videoPreviewLoop,
       videoPreviewVolume: config.settings.grid.videoPreviewVolume,
     });

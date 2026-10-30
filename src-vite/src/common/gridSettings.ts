@@ -36,6 +36,7 @@ export function normalizeGridSettings(grid: any): any {
   grid.videoAutoplay = grid.videoAutoplay !== false;
   // 0 means "no explicit cap"; visibility still limits playback to the screen.
   grid.videoAutoplayLimit = Math.round(clampSetting(grid.videoAutoplayLimit, 0, 64, 8));
+  grid.videoSingleAudio = grid.videoSingleAudio !== false;
   grid.videoPreviewLoop = grid.videoPreviewLoop !== false;
   grid.videoPreviewVolume = clampSetting(grid.videoPreviewVolume, 0, 1, 0.8);
 

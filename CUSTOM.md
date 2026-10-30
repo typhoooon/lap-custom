@@ -20,7 +20,9 @@ areas:
      the Settings switch does the same.
    - Each hovered video gets a volume button aligned with the file menu. It
      hides with the menu while the pointer is away, but stays visible while
-     that video is the audible one. Only one preview can be audible at a time.
+     that video is the audible one. A "single preview with sound" switch keeps
+     only one audible by default; turn it off to let every unmuted visible
+     preview play its own sound.
    - Preview looping is a setting.
    - Previews stop and release their decoders/audio when the album or view
      changes, when the image viewer window is open, and while an inline preview
