@@ -19,6 +19,7 @@ test('missing fork settings receive defaults', () => {
   assert.equal(grid.videoSingleAudio, true);
   assert.equal(grid.videoPreviewLoop, true);
   assert.equal(grid.videoPreviewVolume, 0.8);
+  assert.equal(grid.videoPreviewCountdown, false);
 });
 
 test('out-of-range and corrupt values are clamped', () => {
@@ -31,6 +32,7 @@ test('out-of-range and corrupt values are clamped', () => {
     videoSingleAudio: false,
     videoPreviewLoop: false,
     videoPreviewVolume: 3,
+    videoPreviewCountdown: true,
   });
   assert.equal(grid.style, 5);
   assert.equal(grid.balanced.portraitBoost, 0.8);
@@ -43,6 +45,7 @@ test('out-of-range and corrupt values are clamped', () => {
   assert.equal(grid.videoSingleAudio, false);
   assert.equal(grid.videoPreviewLoop, false);
   assert.equal(grid.videoPreviewVolume, 1);
+  assert.equal(grid.videoPreviewCountdown, true);
 });
 
 test('explicit false/zero values are preserved where valid', () => {

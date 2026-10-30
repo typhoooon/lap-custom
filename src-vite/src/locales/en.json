@@ -503,8 +503,9 @@
       "scanning": "Scanning…",
       "scan_paused": "Scan paused",
       "scan_queued": "Queued for scan",
-      "video_autoplay_on": "Pause thumbnail autoplay",
-      "video_autoplay_off": "Resume thumbnail autoplay"
+      "video_pause_all": "Pause all thumbnail previews",
+      "video_resume_all": "Resume all thumbnail previews",
+      "video_enable_autoplay": "Enable thumbnail autoplay"
     }
   },
   "info_panel": {
@@ -1526,8 +1527,15 @@
       "video_autoplay_limit_hint": "0 = no cap (visible thumbnails only). Use the switch above to turn autoplay off.",
       "video_single_audio": "Only one preview with sound",
       "video_single_audio_hint": "Off: every unmuted visible preview can play sound at the same time.",
+      "video_timer_direction": "Preview timer",
+      "video_timer_direction_hint": "Counts up or down while a thumbnail preview plays.",
+      "video_timer_up": "Count up",
+      "video_timer_down": "Count down",
+      "video_play_preview": "Play this preview",
+      "video_pause_preview": "Pause this preview",
       "video_preview_loop": "Loop previews",
-      "video_preview_volume": "Preview volume",
+      "video_preview_volume": "Default preview volume",
+      "video_preview_volume_hint": "Each thumbnail remembers its own slider; this default applies to videos you have not adjusted.",
       "video_mute": "Mute this video",
       "video_unmute": "Play sound from this video"
     },

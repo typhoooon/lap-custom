@@ -64,6 +64,7 @@
         preload="metadata"
         @canplay="handleVideoCanPlay"
         @playing="isVideoPreviewReady = true"
+        @timeupdate="handleVideoTimeUpdate"
         @error="handleVideoPreviewError"
       ></video>
       <img
@@ -118,7 +119,7 @@
             min="0"
             max="1"
             step="0.05"
-            :value="config.settings.grid.videoPreviewVolume"
+            :value="effectivePreviewVolume"
             :aria-label="t('settings.grid.video_preview_volume')"
             @input="onPreviewVolumeInput"
           />
@@ -204,13 +205,38 @@
         >
           <span class="leading-none">{{ rawJpegPairBadge }}</span>
         </div>
-        <div
-          v-if="file.file_type === 2"
-          class="thumb-badge"
-        >
-          <template v-if="videoDurationBadge">{{ videoDurationBadge }}</template>
-          <IconVideo v-else class="h-3.5 w-3.5 shrink-0" />
-        </div>
+        <template v-if="file.file_type === 2">
+          <button
+            v-if="isDynamicDurationPill"
+            type="button"
+            class="thumb-badge pointer-events-auto cursor-pointer select-none tabular-nums"
+            :class="isPreviewPlaying ? 'text-base-content' : 'text-base-content/60'"
+            :title="isPreviewPlaying ? t('settings.grid.video_pause_preview') : t('settings.grid.video_play_preview')"
+            :aria-label="isPreviewPlaying ? t('settings.grid.video_pause_preview') : t('settings.grid.video_play_preview')"
+            @pointerenter="isDurationPillHovered = true"
+            @pointerleave="isDurationPillHovered = false"
+            @pointerdown.stop
+            @click.stop="togglePreviewPlayback"
+            @dblclick.stop
+            @contextmenu.stop
+          >
+            <IconPause v-if="isPreviewPlaying" class="h-3 w-3 shrink-0" />
+            <IconPlay v-else class="h-3 w-3 shrink-0" />
+            <span class="leading-none">{{ previewTimerLabel }}</span>
+            <span
+              class="inline-flex items-center overflow-hidden whitespace-nowrap transition-all duration-200 ease-out"
+              :class="isDurationPillHovered && containerWidth >= 96 ? 'max-w-24 opacity-100 ml-1' : 'max-w-0 opacity-0 ml-0'"
+              aria-hidden="true"
+            >
+              <span class="mr-1 text-base-content/40">·</span>
+              <span>{{ videoDurationBadge }}</span>
+            </span>
+          </button>
+          <div v-else class="thumb-badge">
+            <template v-if="videoDurationBadge">{{ videoDurationBadge }}</template>
+            <IconVideo v-else class="h-3.5 w-3.5 shrink-0" />
+          </div>
+        </template>
         <div
           v-if="dedupStatus"
           class="thumb-badge"
@@ -278,7 +304,7 @@
 import { computed, nextTick, ref, watch, toRef, onBeforeUnmount, type CSSProperties, type Component } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
-import { config } from '@/common/config';
+import { config, libConfig } from '@/common/config';
 import { THUMBNAIL_BADGE } from '@/common/constants';
 import { isMac, shortenFilename, formatFileSize, formatDimensionText, formatDuration, formatTimestamp, formatCaptureSettings, formatCaptureSettingValue, formatCameraInfo, getAssetSrc, getThumbUrl, getFileExtension } from '@/common/utils';
 import { isWebViewVideoPlaybackDisabled, getGStreamerAvailability } from '@/common/video';
@@ -294,13 +320,16 @@ import {
   setPreviewHover,
   releasePreviewSlot,
   refreshPreviewScheduler,
+  pausePreviewPlayback,
+  resumePreviewPlayback,
 } from '@/common/videoPreviewScheduler';
 import {
   isPreviewAudioActive,
   claimPreviewAudio,
   releasePreviewAudio,
-  setPreviewAudioVolume,
+  setPreviewAudioVolumeFor,
 } from '@/common/videoPreviewAudio';
+import { getStoredPreviewVolume, setStoredPreviewVolume } from '@/common/videoPreviewVolume';
 import { useFileMenuItems } from '@/common/fileMenu';
 import { isMediaViewerWindowOpen, isPreviewFullScreen, isThumbnailPreviewSuspended } from '@/common/viewerState';
 
@@ -321,6 +350,8 @@ import {
   IconLivePhoto,
   IconVolumeHigh,
   IconVolumeMute,
+  IconPlay,
+  IconPause,
 } from '@/common/icons';
 
 const props = defineProps({
@@ -375,6 +406,9 @@ let previewTimer: ReturnType<typeof setTimeout> | null = null;
 let animatedImagePreviewTimer: ReturnType<typeof setTimeout> | null = null;
 const showVideoPreview = ref(false);
 const isVideoPreviewReady = ref(false);
+const previewCurrentTime = ref(0);
+const isPreviewManuallyPaused = ref(false);
+const isDurationPillHovered = ref(false);
 const showAnimatedImagePreview = ref(false);
 const isAnimatedImagePreviewReady = ref(false);
 const isHovered = ref(false);
@@ -401,11 +435,43 @@ const canPreviewVideo = computed(() => (
   // The companion video is checked live before playback.
   && (isLivePhoto.value || !props.file.cloud_only)
 ));
+const previewVolumeKey = computed(() => {
+  const fileId = Number(props.file?.id || 0);
+  if (!fileId) return '';
+  return `${libConfig._libraryId || ''}:${fileId}`;
+});
+const effectivePreviewVolume = computed(() => {
+  const stored = previewVolumeKey.value ? getStoredPreviewVolume(previewVolumeKey.value) : null;
+  const value = stored != null ? stored : Number(config.settings.grid.videoPreviewVolume);
+  if (!Number.isFinite(value)) return 0.8;
+  return Math.min(1, Math.max(0, value));
+});
 const isVideoPreviewAudible = computed(() =>
   isPreviewAudioActive(previewCandidateId)
-  && Number(config.settings.grid.videoPreviewVolume) > 0
+  && effectivePreviewVolume.value > 0
 );
 const isAutoplayPreviewEnabled = () => config.settings.grid.videoAutoplay !== false;
+const previewDuration = computed(() => {
+  if (!isVideoFile.value) return 0;
+  const duration = Number(props.file?.duration);
+  return Number.isFinite(duration) && duration > 0 ? duration : 0;
+});
+const isDynamicDurationPill = computed(() => (
+  previewDuration.value > 0
+  && canPreviewVideo.value
+  && isAutoplayPreviewEnabled()
+));
+const isPreviewPlaying = computed(() => (
+  showVideoPreview.value && !isPreviewManuallyPaused.value
+));
+const previewTimerLabel = computed(() => {
+  const total = previewDuration.value;
+  const current = Math.max(0, Math.min(total, Number(previewCurrentTime.value) || 0));
+  const seconds = config.settings.grid.videoPreviewCountdown
+    ? Math.max(0, total - current)
+    : current;
+  return formatDuration(Math.floor(seconds));
+});
 
 registerPreviewCandidate({
   id: previewCandidateId,
@@ -567,9 +633,9 @@ watch(() => config.settings.grid.videoPreviewLoop, (loop) => {
   if (previewVideoRef.value) previewVideoRef.value.loop = loop;
 });
 
-watch(() => config.settings.grid.videoPreviewVolume, (volume) => {
+watch(effectivePreviewVolume, (volume) => {
   if (!isPreviewAudioActive(previewCandidateId)) return;
-  setPreviewAudioVolume(Number(volume));
+  setPreviewAudioVolumeFor(previewCandidateId, volume);
 });
 
 watch(() => isPreviewAudioActive(previewCandidateId), (active) => {
@@ -630,10 +696,17 @@ function releaseClaimedAudio() {
 function claimAudioNow() {
   const video = previewVideoRef.value;
   if (!video || !video.src) return;
-  const configuredVolume = Number(config.settings.grid.videoPreviewVolume);
-  const volume = Number.isFinite(configuredVolume) && configuredVolume > 0 ? configuredVolume : 0.8;
+  const configuredVolume = effectivePreviewVolume.value;
+  const defaultVolume = Number(config.settings.grid.videoPreviewVolume);
+  const volume = configuredVolume > 0
+    ? configuredVolume
+    : (Number.isFinite(defaultVolume) && defaultVolume > 0 ? defaultVolume : 0.8);
   if (!(configuredVolume > 0)) {
-    config.settings.grid.videoPreviewVolume = volume;
+    if (previewVolumeKey.value) {
+      setStoredPreviewVolume(previewVolumeKey.value, volume);
+    } else {
+      config.settings.grid.videoPreviewVolume = volume;
+    }
   }
   claimedAudioKey.value = previewCandidateId;
   wantsAudio.value = true;
@@ -666,10 +739,25 @@ function onPreviewVolumeInput(event: Event) {
   const target = event.target as HTMLInputElement | null;
   if (!target) return;
   const volume = Math.max(0, Math.min(1, Number(target.value)));
-  config.settings.grid.videoPreviewVolume = volume;
+  if (previewVolumeKey.value) {
+    // Remember this file's volume; the Settings value stays the default.
+    setStoredPreviewVolume(previewVolumeKey.value, volume);
+  } else {
+    config.settings.grid.videoPreviewVolume = volume;
+  }
   if (isPreviewAudioActive(previewCandidateId)) {
     // Keep ownership at 0 so the slider stays visible and can be dragged back up.
-    setPreviewAudioVolume(volume);
+    setPreviewAudioVolumeFor(previewCandidateId, volume);
+  }
+}
+
+function handleVideoTimeUpdate(event: Event) {
+  const video = event.target as HTMLVideoElement | null;
+  if (!video) return;
+  const time = Number(video.currentTime) || 0;
+  // The pill only shows whole seconds; avoid re-rendering on every timeupdate.
+  if (Math.floor(time) !== Math.floor(previewCurrentTime.value)) {
+    previewCurrentTime.value = time;
   }
 }
 
@@ -681,6 +769,37 @@ function handleVideoCanPlay() {
 function handleVideoPreviewError() {
   releasePreviewSlot(previewCandidateId);
   stopVideoPreview('all', true);
+}
+
+function pausePreviewFromPill() {
+  const video = previewVideoRef.value;
+  if (!video) return;
+  video.pause();
+  previewCurrentTime.value = Number(video.currentTime) || 0;
+  isPreviewManuallyPaused.value = true;
+  // Keep the paused frame and current time; only release the scheduler slot.
+  pausePreviewPlayback(previewCandidateId);
+  releaseClaimedAudio();
+}
+
+function resumePreviewFromPill() {
+  isPreviewManuallyPaused.value = false;
+  const video = previewVideoRef.value;
+  if (video && showVideoPreview.value) {
+    resumePreviewPlayback(previewCandidateId);
+    void video.play().catch(() => {
+      stopVideoPreview('all', true);
+      resumePreviewPlayback(previewCandidateId);
+    });
+    return;
+  }
+  resumePreviewPlayback(previewCandidateId);
+}
+
+function togglePreviewPlayback() {
+  if (!isAutoplayPreviewEnabled()) return;
+  if (isPreviewPlaying.value) pausePreviewFromPill();
+  else resumePreviewFromPill();
 }
 
 let videoPreviewRequest = 0;
@@ -733,6 +852,8 @@ function startVideoPreview(
       if (source === 'autoplay' && !isInViewport.value) { finishPreviewStart(false); return; }
 
       isVideoPreviewReady.value = false;
+      previewCurrentTime.value = 0;
+      isPreviewManuallyPaused.value = false;
       showVideoPreview.value = true;
       previewOwner.value = source;
       await nextTick();
@@ -743,7 +864,7 @@ function startVideoPreview(
       video.src = getAssetSrc(previewVideoPath.value);
       video.loop = config.settings.grid.videoPreviewLoop;
       video.muted = !isVideoPreviewAudible.value;
-      video.volume = Number(config.settings.grid.videoPreviewVolume) || 0.8;
+      video.volume = effectivePreviewVolume.value;
 
       try {
         await video.play();
@@ -781,6 +902,8 @@ function stopVideoPreview(source: 'hover' | 'autoplay' | 'all' = 'all', force = 
 
   releaseClaimedAudio();
   isVideoPreviewReady.value = false;
+  previewCurrentTime.value = 0;
+  isPreviewManuallyPaused.value = false;
   showVideoPreview.value = false;
   previewOwner.value = 'none';
 }
@@ -965,8 +1088,7 @@ const videoDurationBadge = computed(() => {
   const duration = Number(props.file?.duration);
   if (!Number.isFinite(duration) || duration <= 0) return '';
 
-  const formattedDuration = formatDuration(duration);
-  return formattedDuration;
+  return formatDuration(Math.floor(duration));
 });
 
 const thumbnailBadge = computed(() => {

@@ -55,13 +55,15 @@
       <!-- toolbar -->
       <div class="flex items-center gap-2 shrink-0">
 
-        <!-- thumbnail video autoplay -->
+        <!-- thumbnail video playback -->
         <TButton
-          :icon="isVideoAutoplayEnabled ? IconVideoPlay : IconVideoSlash"
+          :icon="isVideoPlaybackActive ? IconPause : IconPlay"
           :buttonSize="'medium'"
-          :selected="isVideoAutoplayEnabled"
-          :tooltip="isVideoAutoplayEnabled ? $t('toolbar.tooltip.video_autoplay_on') : $t('toolbar.tooltip.video_autoplay_off')"
-          @click="toggleVideoAutoplay"
+          :selected="isVideoPlaybackActive"
+          :tooltip="isVideoPlaybackActive
+            ? $t('toolbar.tooltip.video_pause_all')
+            : (isVideoAutoplayEnabled ? $t('toolbar.tooltip.video_resume_all') : $t('toolbar.tooltip.video_enable_autoplay'))"
+          @click="toggleVideoPlayback"
         />
 
         <!-- file type options -->
@@ -835,7 +837,14 @@ import ModalDialog from '@/components/ModalDialog.vue';
 import RefreshFileInfoDialog from '@/components/RefreshFileInfoDialog.vue';
 import { fileInfoRevision } from '@/common/fileInfoRefresh';
 import { isMediaViewerWindowOpen } from '@/common/viewerState';
-import { pauseAllPreviewVideos, refreshPreviewScheduler } from '@/common/videoPreviewScheduler';
+import {
+  isPreviewPlaybackPaused,
+  pauseAllPreviewVideos,
+  refreshPreviewScheduler,
+  resetPreviewPlaybackState,
+  setGlobalPreviewPaused,
+  stopAllPreviewPlayback,
+} from '@/common/videoPreviewScheduler';
 import { enforceSingleAudioMode } from '@/common/videoPreviewAudio';
 import IndexRecoveryDialog from '@/components/IndexRecoveryDialog.vue';
 import MoveTo from '@/components/MoveTo.vue';
@@ -904,8 +913,8 @@ import {
   IconSortingShuffle,
   IconFilter,
   IconPanelMax,
-  IconVideoPlay,
-  IconVideoSlash,
+  IconPlay,
+  IconPause,
 } from '@/common/icons';
 
 const thumbnailPlaceholder = new URL('@/assets/images/image-file.png', import.meta.url).href;
@@ -10593,11 +10602,32 @@ const isFixedAiResultView = computed(() =>
 );
 
 const isVideoAutoplayEnabled = computed(() => config.settings.grid.videoAutoplay !== false);
+const isVideoPlaybackActive = computed(() => (
+  isVideoAutoplayEnabled.value && !isPreviewPlaybackPaused.value
+));
 
-function toggleVideoAutoplay() {
-  config.settings.grid.videoAutoplay = !isVideoAutoplayEnabled.value;
-  refreshPreviewScheduler();
+function toggleVideoPlayback() {
+  if (!isVideoAutoplayEnabled.value) {
+    config.settings.grid.videoAutoplay = true;
+    resetPreviewPlaybackState();
+    refreshPreviewScheduler();
+    return;
+  }
+  setGlobalPreviewPaused(!isPreviewPlaybackPaused.value);
 }
+
+watch(
+  () => config.settings.grid.videoAutoplay,
+  (enabled) => {
+    if (enabled) {
+      resetPreviewPlaybackState();
+    } else {
+      stopAllPreviewPlayback();
+      resetPreviewPlaybackState();
+    }
+    refreshPreviewScheduler();
+  },
+);
 
 watch(
   () => config.settings.grid.videoSingleAudio,

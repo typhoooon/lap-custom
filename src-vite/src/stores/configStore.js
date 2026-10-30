@@ -196,6 +196,7 @@ export const useConfigStore = defineStore('configStore', {
         videoSingleAudio: true,        // only one preview may be audible at a time
         videoPreviewLoop: true,        // loop hover/autoplay previews
         videoPreviewVolume: 0.8,       // preview volume (0-1) when the user unmutes one
+        videoPreviewCountdown: false, // duration pill: false count up, true count down
       },
       
       // image view settings

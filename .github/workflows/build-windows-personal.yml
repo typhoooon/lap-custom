@@ -132,12 +132,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v0.3.3-custom.3-build.${{ github.run_number }}
-          name: Lap Custom 0.3.3-custom.3 (build ${{ github.run_number }})
+          tag_name: v0.3.3-custom.4-build.${{ github.run_number }}
+          name: Lap Custom 0.3.3-custom.4 (build ${{ github.run_number }})
           body: |
             个人自用构建（非官方 Lap） / Personal build, not an official Lap release.
 
-            - 版本 / Version: 0.3.3-custom.3
+            - 版本 / Version: 0.3.3-custom.4
             - 提交 / Commit: ${{ github.sha }}
             - 工作流 / Workflow run: ${{ github.run_number }}
           files: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi

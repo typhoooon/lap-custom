@@ -503,8 +503,9 @@
       "scanning": "掃描中…",
       "scan_paused": "掃描已暫停",
       "scan_queued": "已排隊等待掃描",
-      "video_autoplay_on": "暫停縮圖自動播放",
-      "video_autoplay_off": "恢復縮圖自動播放"
+      "video_pause_all": "暫停所有縮圖預覽",
+      "video_resume_all": "恢復所有縮圖預覽",
+      "video_enable_autoplay": "開啟縮圖自動播放"
     }
   },
   "info_panel": {
@@ -1526,8 +1527,15 @@
       "video_autoplay_limit_hint": "0 = 不限制（仍然只播放畫面上可見的縮圖）；關閉自動播放請用上方開關。",
       "video_single_audio": "同時只允許一個影片出聲",
       "video_single_audio_hint": "關閉後：同時播放的多個影片可以各自出聲。",
+      "video_timer_direction": "預覽計時",
+      "video_timer_direction_hint": "縮圖影片播放時顯示正計時或倒計時。",
+      "video_timer_up": "正計時",
+      "video_timer_down": "倒計時",
+      "video_play_preview": "播放這個預覽",
+      "video_pause_preview": "暫停這個預覽",
       "video_preview_loop": "循環預覽",
-      "video_preview_volume": "預覽音量",
+      "video_preview_volume": "預設預覽音量",
+      "video_preview_volume_hint": "每個縮圖會記住自己的音量；這裡是沒有單獨調整過的影片使用的預設值。",
       "video_mute": "靜音這個影片",
       "video_unmute": "讓這個影片播放聲音"
     },

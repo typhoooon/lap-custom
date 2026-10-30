@@ -39,6 +39,7 @@ export function normalizeGridSettings(grid: any): any {
   grid.videoSingleAudio = grid.videoSingleAudio !== false;
   grid.videoPreviewLoop = grid.videoPreviewLoop !== false;
   grid.videoPreviewVolume = clampSetting(grid.videoPreviewVolume, 0, 1, 0.8);
+  grid.videoPreviewCountdown = grid.videoPreviewCountdown === true;
 
   return grid;
 }

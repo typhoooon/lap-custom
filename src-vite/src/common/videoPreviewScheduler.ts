@@ -1,4 +1,4 @@
-import { watch } from 'vue';
+import { ref, watch } from 'vue';
 import { config } from '@/common/config';
 import { selectPreviewCandidates } from '@/common/previewSelection';
 import { isMediaViewerWindowOpen, isPreviewFullScreen, isThumbnailPreviewSuspended } from '@/common/viewerState';
@@ -21,6 +21,10 @@ export interface PreviewCandidate {
   priority: number;
   hovered: boolean;
   failedUntil: number;
+  /** User paused this thumbnail's preview; autoplay must not restart it. */
+  manualPaused: boolean;
+  /** User explicitly started this thumbnail (also works while globally paused). */
+  manualStarted: boolean;
 }
 
 type PreviewCandidateSeed = Pick<PreviewCandidate, 'id' | 'isEligible' | 'start' | 'stop'>;
@@ -30,6 +34,9 @@ const active = new Set<string>();
 let scheduled = false;
 let suspendedUntil = 0;
 let resumeTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Global "pause all" from the toolbar; manual starts still work while set. */
+export const isPreviewPlaybackPaused = ref(false);
 
 function now(): number {
   return typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -63,15 +70,28 @@ function run(): void {
   const eligible = [...candidates.values()].filter(
     (candidate) => candidate.visible
       && candidate.failedUntil <= currentTime
+      && !candidate.manualPaused
       && candidate.isEligible(),
   );
+  // While globally paused only thumbnails the user explicitly started may run.
+  const allowed = isPreviewPlaybackPaused.value
+    ? eligible.filter((candidate) => candidate.manualStarted)
+    : eligible;
 
   const next = new Set(
     autoplayEnabled()
       && !isThumbnailPreviewSuspended()
       && currentTime >= suspendedUntil
       && !(typeof document !== 'undefined' && document.hidden)
-      ? selectPreviewCandidates(eligible, autoplayLimit()).map((candidate) => candidate.id)
+      ? selectPreviewCandidates(
+          allowed.map((candidate) => ({
+            id: candidate.id,
+            hovered: candidate.hovered,
+            priority: candidate.priority,
+            manual: candidate.manualStarted,
+          })),
+          autoplayLimit(),
+        ).map((candidate) => candidate.id)
       : [],
   );
 
@@ -127,6 +147,8 @@ export function registerPreviewCandidate(seed: PreviewCandidateSeed): void {
     priority: 0,
     hovered: false,
     failedUntil: 0,
+    manualPaused: false,
+    manualStarted: false,
   });
   schedule();
 }
@@ -163,6 +185,68 @@ export function setPreviewHover(id: string, hovered: boolean): void {
   const candidate = candidates.get(id);
   if (!candidate || candidate.hovered === hovered) return;
   candidate.hovered = hovered;
+  schedule();
+}
+
+function stopAllCandidates(): void {
+  const ids = new Set<string>([...active, ...candidates.keys()]);
+  active.clear();
+  for (const id of ids) {
+    try {
+      candidates.get(id)?.stop();
+    } catch {
+      // A thumbnail may already be tearing down.
+    }
+  }
+}
+
+/**
+ * Pause one thumbnail. The component pauses its <video> in place, so the
+ * scheduler only gives up its slot and must not call stop().
+ */
+export function pausePreviewPlayback(id: string): void {
+  const candidate = candidates.get(id);
+  if (!candidate) return;
+  candidate.manualPaused = true;
+  candidate.manualStarted = false;
+  active.delete(id);
+  schedule();
+}
+
+/** Explicitly play one thumbnail, including while globally paused. */
+export function resumePreviewPlayback(id: string): void {
+  const candidate = candidates.get(id);
+  if (!candidate) return;
+  candidate.manualPaused = false;
+  candidate.manualStarted = true;
+  candidate.failedUntil = 0;
+  schedule();
+}
+
+/** Toolbar "pause all" / "resume all". Resuming clears per-thumbnail overrides. */
+export function setGlobalPreviewPaused(paused: boolean): void {
+  isPreviewPlaybackPaused.value = paused;
+  for (const candidate of candidates.values()) {
+    candidate.manualPaused = false;
+    candidate.manualStarted = false;
+  }
+  stopAllCandidates();
+  schedule();
+}
+
+/** Reset transient playback overrides (autoplay setting changed). */
+export function resetPreviewPlaybackState(): void {
+  isPreviewPlaybackPaused.value = false;
+  for (const candidate of candidates.values()) {
+    candidate.manualPaused = false;
+    candidate.manualStarted = false;
+  }
+  schedule();
+}
+
+/** Stop every thumbnail preview, including paused-in-place elements. */
+export function stopAllPreviewPlayback(): void {
+  stopAllCandidates();
   schedule();
 }
 

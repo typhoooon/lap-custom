@@ -503,8 +503,9 @@
       "scanning": "扫描中…",
       "scan_paused": "扫描已暂停",
       "scan_queued": "排队等待扫描",
-      "video_autoplay_on": "暂停缩略图自动播放",
-      "video_autoplay_off": "恢复缩略图自动播放"
+      "video_pause_all": "暂停所有缩略图预览",
+      "video_resume_all": "恢复所有缩略图预览",
+      "video_enable_autoplay": "开启缩略图自动播放"
     }
   },
   "info_panel": {
@@ -1526,8 +1527,15 @@
       "video_autoplay_limit_hint": "0 = 不限制（仍然只播放屏幕内可见的缩略图）；关闭自动播放请用上方开关。",
       "video_single_audio": "同时只允许一个视频出声",
       "video_single_audio_hint": "关闭后：同时播放的多个视频可以各自出声。",
+      "video_timer_direction": "预览计时",
+      "video_timer_direction_hint": "缩略图视频播放时显示正计时或倒计时。",
+      "video_timer_up": "正计时",
+      "video_timer_down": "倒计时",
+      "video_play_preview": "播放这个预览",
+      "video_pause_preview": "暂停这个预览",
       "video_preview_loop": "循环预览",
-      "video_preview_volume": "预览音量",
+      "video_preview_volume": "默认预览音量",
+      "video_preview_volume_hint": "每个缩略图会记住自己的音量；这里是没有单独调整过的视频使用的默认值。",
       "video_mute": "静音这个视频",
       "video_unmute": "让这个视频播放声音"
     },

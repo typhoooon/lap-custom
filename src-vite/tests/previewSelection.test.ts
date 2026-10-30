@@ -30,6 +30,18 @@ test('limit changes and degenerate inputs are handled', () => {
   assert.equal(selectPreviewCandidates(items, Number.POSITIVE_INFINITY).length, 2);
 });
 
+test('manually started previews win over hovered and higher-priority ones', () => {
+  const selected = selectPreviewCandidates(
+    [
+      { ...item('hovered', true, 1), manual: false },
+      { ...item('manual', false, 0.1), manual: true },
+      { ...item('priority', false, 0.9), manual: false },
+    ],
+    1,
+  );
+  assert.deepEqual(selected.map((entry) => entry.id), ['manual']);
+});
+
 test('selection is deterministic for equal priorities', () => {
   const items = [item('first', false, 1), item('second', false, 1)];
   assert.deepEqual(

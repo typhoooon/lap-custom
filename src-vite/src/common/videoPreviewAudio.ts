@@ -56,9 +56,11 @@ export function releasePreviewAudio(id?: string): void {
   publishActiveIds();
 }
 
-export function setPreviewAudioVolume(volume: number): number {
+/** Adjust one audible preview; multi-audio previews keep their own volume. */
+export function setPreviewAudioVolumeFor(id: string, volume: number): number {
   const next = clampVolume(volume);
-  for (const video of activeVideos.values()) {
+  const video = activeVideos.get(id);
+  if (video) {
     video.volume = next;
     video.muted = next <= 0;
   }

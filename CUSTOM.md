@@ -23,6 +23,16 @@ areas:
      that video is the audible one. A "single preview with sound" switch keeps
      only one audible by default; turn it off to let every unmuted visible
      preview play its own sound.
+   - Per-file volume: the Settings value is the default, and moving a
+     thumbnail's slider remembers that file's volume (keyed by library + file
+     id, under the localStorage key `lap_custom_video_preview_volumes`), so a
+     loud clip stays quiet next time.
+   - The toolbar play/pause button pauses or resumes all thumbnail previews.
+     While paused, individual thumbnails can still be started (and while
+     playing, individual ones can be paused).
+   - With autoplay on, the bottom-left duration badge becomes a play/pause
+     button. It shows a live count-up or count-down timer (setting, default
+     count-up) and expands on hover to reveal the total duration.
    - Preview looping is a setting.
    - Previews stop and release their decoders/audio when the album or view
      changes, when the image viewer window is open, and while an inline preview
@@ -43,7 +53,7 @@ areas:
 | Setting | Value |
 | :-- | :-- |
 | `productName` | `Lap Custom` |
-| `version` | `0.3.3-custom.3` |
+| `version` | `0.3.3-custom.4` |
 | `identifier` | `dev.typhoon.lapcustom` |
 | updater endpoints | none (auto-update check defaults off) |
 | update artifacts | disabled |
@@ -83,7 +93,7 @@ cargo tauri build
 VC++ 运行库最低版本检查。MSI 会包含 models、ffmpeg 和 ONNX Runtime DLL。
 
 WiX 的 MSI ProductVersion 只接受数字版本，因此 `tauri.windows.conf.json` 里的
-`bundle.windows.wix.version` 设为 `0.3.3.3`；应用版本仍是 `0.3.3-custom.3`，
+`bundle.windows.wix.version` 设为 `0.3.3.4`；应用版本仍是 `0.3.3-custom.4`，
 安装包靠 productName `Lap Custom` 和 Release tag 与官方区分。
 
 下面的本地交叉编译流程仅为历史记录，已不再作为主要构建方式。
