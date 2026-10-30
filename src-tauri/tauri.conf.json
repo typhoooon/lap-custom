@@ -1,6 +1,6 @@
 {
   "productName": "Lap Custom",
-  "version": "0.3.3-custom.4",
+  "version": "0.3.3-custom.5",
   "identifier": "dev.typhoon.lapcustom",
   "build": {
     "beforeBuildCommand": "pnpm --dir ../src-vite build",

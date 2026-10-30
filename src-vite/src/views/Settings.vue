@@ -208,6 +208,20 @@
                 <option v-for="(option, index) in gridScalingOptions" :key="index" :value="option.value">{{ option.label }}</option>
               </select>
             </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.grid.remember_scroll_position') }}</div>
+                <div class="text-xs text-base-content/50">{{ $t('settings.grid.remember_scroll_position_hint') }}</div>
+              </div>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.rememberScrollPosition" />
+            </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.grid.per_folder_size') }}</div>
+                <div class="text-xs text-base-content/50">{{ $t('settings.grid.per_folder_size_hint') }}</div>
+              </div>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.perFolderSize" />
+            </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.grid.thumbnail_corners') }}</div>
@@ -291,6 +305,13 @@
                 <option :value="false">{{ $t('settings.grid.video_timer_up') }}</option>
                 <option :value="true">{{ $t('settings.grid.video_timer_down') }}</option>
               </select>
+            </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.grid.video_preview_progress_bar') }}</div>
+                <div class="text-xs text-base-content/50">{{ $t('settings.grid.video_preview_progress_bar_hint') }}</div>
+              </div>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.videoPreviewProgressBar" />
             </div>
             <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
@@ -1741,6 +1762,12 @@ watch(() => config.settings.grid.style, (newValue) => {
 watch(() => config.settings.grid.scaling, (newValue) => {
   emit('settings-gridScaling-changed', newValue);
 });
+watch(() => config.settings.grid.rememberScrollPosition, (newValue) => {
+  emit('settings-gridRememberScrollPosition-changed', newValue);
+});
+watch(() => config.settings.grid.perFolderSize, (newValue) => {
+  emit('settings-gridPerFolderSize-changed', newValue);
+});
 watch(() => config.settings.grid.thumbnailCorners, (newValue) => {
   emit('settings-gridThumbnailCorners-changed', newValue);
 });
@@ -1780,6 +1807,7 @@ watch(
     () => config.settings.grid.videoPreviewLoop,
     () => config.settings.grid.videoPreviewVolume,
     () => config.settings.grid.videoPreviewCountdown,
+    () => config.settings.grid.videoPreviewProgressBar,
   ],
   () => {
     emit('settings-gridVideoPreview-changed', {
@@ -1789,6 +1817,7 @@ watch(
       videoPreviewLoop: config.settings.grid.videoPreviewLoop,
       videoPreviewVolume: config.settings.grid.videoPreviewVolume,
       videoPreviewCountdown: config.settings.grid.videoPreviewCountdown,
+      videoPreviewProgressBar: config.settings.grid.videoPreviewProgressBar,
     });
   },
 );

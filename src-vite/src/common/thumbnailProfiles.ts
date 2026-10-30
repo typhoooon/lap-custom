@@ -1,7 +1,10 @@
 export const THUMBNAIL_PROFILES = {
-  256: { minGridSize: 60, maxGridSize: 180 },
-  512: { minGridSize: 120, maxGridSize: 360 },
-  1024: { minGridSize: 240, maxGridSize: 720 },
+  // The high end is deliberately larger than the thumbnail bitmap so a wide
+  // window can show only two or three columns; the quality profile still
+  // bounds how much upscaling is allowed.
+  256: { minGridSize: 60, maxGridSize: 300 },
+  512: { minGridSize: 120, maxGridSize: 560 },
+  1024: { minGridSize: 240, maxGridSize: 560 },
 } as const;
 
 export type ThumbnailSize = keyof typeof THUMBNAIL_PROFILES;

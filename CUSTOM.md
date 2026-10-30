@@ -12,12 +12,17 @@ areas:
      optional landscape column spanning, packed with a skyline algorithm.
    - Parameters live in **Settings → Grid**. The grid-size slider still controls
      the base size.
+   - The grid-size slider's upper range is larger, so a window can show only
+     two or three columns. An optional "remember grid size per folder" setting
+     stores each folder's slider value; the default is one size everywhere.
+   - Album/folder scroll positions are remembered by default. A setting can
+     switch back to always starting at the top.
 2. **Thumbnail video previews**
    - Visible video thumbnails autoplay muted; off-screen previews pause.
    - Simultaneous previews is a number setting (default 8, `0` = no explicit
      cap). Autoplay still only starts thumbnails inside the viewport.
-   - A toolbar button left of the filter toggles thumbnail autoplay globally;
-     the Settings switch does the same.
+   - With autoplay disabled, the original hover behavior remains: only the
+     hovered thumbnail plays, and leaving it pauses.
    - Each hovered video gets a volume button aligned with the file menu. It
      hides with the menu while the pointer is away, but stays visible while
      that video is the audible one. A "single preview with sound" switch keeps
@@ -33,6 +38,9 @@ areas:
    - With autoplay on, the bottom-left duration badge becomes a play/pause
      button. It shows a live count-up or count-down timer (setting, default
      count-up) and expands on hover to reveal the total duration.
+   - The expanded pill can show a draggable progress bar between the current
+     time and the total (setting, default on). It is only visible on hover, not
+     in the compact badge.
    - Preview looping is a setting.
    - Previews stop and release their decoders/audio when the album or view
      changes, when the image viewer window is open, and while an inline preview
@@ -53,7 +61,7 @@ areas:
 | Setting | Value |
 | :-- | :-- |
 | `productName` | `Lap Custom` |
-| `version` | `0.3.3-custom.4` |
+| `version` | `0.3.3-custom.5` |
 | `identifier` | `dev.typhoon.lapcustom` |
 | updater endpoints | none (auto-update check defaults off) |
 | update artifacts | disabled |
@@ -93,7 +101,7 @@ cargo tauri build
 VC++ 运行库最低版本检查。MSI 会包含 models、ffmpeg 和 ONNX Runtime DLL。
 
 WiX 的 MSI ProductVersion 只接受数字版本，因此 `tauri.windows.conf.json` 里的
-`bundle.windows.wix.version` 设为 `0.3.3.4`；应用版本仍是 `0.3.3-custom.4`，
+`bundle.windows.wix.version` 设为 `0.3.3.5`；应用版本仍是 `0.3.3-custom.5`，
 安装包靠 productName `Lap Custom` 和 Release tag 与官方区分。
 
 下面的本地交叉编译流程仅为历史记录，已不再作为主要构建方式。

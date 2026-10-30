@@ -5,6 +5,8 @@ import { normalizeGridSettings } from '../src/common/gridSettings.ts';
 test('missing fork settings receive defaults', () => {
   const grid = normalizeGridSettings({ style: 2 });
   assert.equal(grid.style, 2);
+  assert.equal(grid.rememberScrollPosition, true);
+  assert.equal(grid.perFolderSize, false);
   assert.deepEqual(grid.balanced, {
     portraitBoost: 0.3,
     maxRowHeightMultiplier: 1.5,
@@ -33,6 +35,9 @@ test('out-of-range and corrupt values are clamped', () => {
     videoPreviewLoop: false,
     videoPreviewVolume: 3,
     videoPreviewCountdown: true,
+    videoPreviewProgressBar: false,
+    rememberScrollPosition: false,
+    perFolderSize: true,
   });
   assert.equal(grid.style, 5);
   assert.equal(grid.balanced.portraitBoost, 0.8);
@@ -46,6 +51,9 @@ test('out-of-range and corrupt values are clamped', () => {
   assert.equal(grid.videoPreviewLoop, false);
   assert.equal(grid.videoPreviewVolume, 1);
   assert.equal(grid.videoPreviewCountdown, true);
+  assert.equal(grid.videoPreviewProgressBar, false);
+  assert.equal(grid.rememberScrollPosition, false);
+  assert.equal(grid.perFolderSize, true);
 });
 
 test('explicit false/zero values are preserved where valid', () => {

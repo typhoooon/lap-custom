@@ -170,6 +170,8 @@ export const useConfigStore = defineStore('configStore', {
       mapTheme: 0,                // full Map view theme (0: standard, 1: satellite); independent of infoPanel.mapTheme
       grid: {
         sizePosition: 0,         // grid size slider position (0-1)
+        rememberScrollPosition: true, // returning to an album restores its last scroll offset
+        perFolderSize: false,    // remember the grid-size slider per album/folder instead of globally
         style: 0,                // 0: card, 1: tile, 2: justified, 3: masonry, 4: balanced, 5: enhanced masonry
         viewMode: 'grid',        // grid | filmstrip | map
         scaling: 1,              // 0: Fit Entire Image, 1: Crop to Fill, 2: Stretch to Fill
@@ -197,6 +199,7 @@ export const useConfigStore = defineStore('configStore', {
         videoPreviewLoop: true,        // loop hover/autoplay previews
         videoPreviewVolume: 0.8,       // preview volume (0-1) when the user unmutes one
         videoPreviewCountdown: false, // duration pill: false count up, true count down
+        videoPreviewProgressBar: true, // show a draggable progress bar in the expanded pill
       },
       
       // image view settings

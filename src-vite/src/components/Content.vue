@@ -836,6 +836,8 @@ import MessageBox from '@/components/MessageBox.vue';
 import ModalDialog from '@/components/ModalDialog.vue';
 import RefreshFileInfoDialog from '@/components/RefreshFileInfoDialog.vue';
 import { fileInfoRevision } from '@/common/fileInfoRefresh';
+import { getStoredGridSizePosition, setStoredGridSizePosition } from '@/common/gridSizeOverrides';
+import { getStoredScrollTop, setStoredScrollTop } from '@/common/scrollPositions';
 import { isMediaViewerWindowOpen } from '@/common/viewerState';
 import {
   isPreviewPlaybackPaused,
@@ -2605,20 +2607,39 @@ function scheduleLayoutRefresh() {
 }
 const gap = 8;                    // Gap between items (must match GridView)
 const gridSizeProfile = computed(() => thumbnailProfile(config.settings.thumbnailSize));
+const gridSizeContextKey = computed(() => {
+  if (!config.settings.grid.perFolderSize) return '';
+  const albumId = Number(libConfig.album?.id || 0);
+  if (!albumId) return '';
+  return `${libConfig._libraryId || ''}:${albumId}:${libConfig.album?.folderPath || ''}`;
+});
+const effectiveGridSizePosition = computed(() => {
+  const stored = gridSizeContextKey.value
+    ? getStoredGridSizePosition(gridSizeContextKey.value)
+    : null;
+  return stored != null ? stored : normalizeGridSizePosition(config.settings.grid.sizePosition);
+});
 const gridSize = computed(() =>
-  gridSizeFromPosition(config.settings.grid.sizePosition, config.settings.thumbnailSize),
+  gridSizeFromPosition(effectiveGridSizePosition.value, config.settings.thumbnailSize),
 );
 const gridSizePosition = computed({
-  get: () => Math.round(normalizeGridSizePosition(config.settings.grid.sizePosition) * 100),
+  get: () => Math.round(effectiveGridSizePosition.value * 100),
   set: (value) => {
-    config.settings.grid.sizePosition = normalizeGridSizePosition(Number(value) / 100);
+    const position = normalizeGridSizePosition(Number(value) / 100);
+    if (gridSizeContextKey.value) {
+      setStoredGridSizePosition(gridSizeContextKey.value, position);
+    } else {
+      config.settings.grid.sizePosition = position;
+    }
   },
 });
 
 function setGridSize(value: unknown) {
   const profile = gridSizeProfile.value;
   const size = Math.min(profile.maxGridSize, Math.max(profile.minGridSize, Number(value) || profile.minGridSize));
-  config.settings.grid.sizePosition = gridSizePositionFromGridSize(size, config.settings.thumbnailSize);
+  gridSizePosition.value = Math.round(
+    gridSizePositionFromGridSize(size, config.settings.thumbnailSize) * 100,
+  );
 }
 
 const itemWidth = computed(() => {
@@ -3481,6 +3502,10 @@ let scanVisiblePrefetchTimer: ReturnType<typeof setTimeout> | null = null;
 const scanVisiblePrefetchStart = ref(0);
 const scanVisiblePrefetchEnd = ref(0);
 const pendingRestoreScrollTop = ref<number | null>(null);
+let lastKnownScrollTop = 0;
+let scrollSaveTimer: ReturnType<typeof setTimeout> | null = null;
+let scrollSaveKey = '';
+let restorePendingTimer: ReturnType<typeof setTimeout> | null = null;
 
 const isFilmstripVertical = computed(() => isFilmstripView.value && config.settings.grid.previewPosition >= 2);
 
@@ -4577,10 +4602,66 @@ function updateScrollPosition(currentScrollTop: number, currentScrollHeight: num
     }
 }
 
+function scrollContextKey(values: any[]): string {
+  const [libraryId, albumId, folderPath] = values;
+  const id = Number(albumId || 0);
+  if (!id) return '';
+  return `${libraryId || ''}:${id}:${folderPath || ''}`;
+}
+
+function currentScrollContextKey(): string {
+  return scrollContextKey([libConfig._libraryId, libConfig.album.id, libConfig.album.folderPath]);
+}
+
+function scheduleScrollSave(): void {
+  if (!config.settings.grid.rememberScrollPosition) return;
+  // The reset-to-top that precedes a restore must not overwrite the target
+  // album's saved offset before the new content finishes loading.
+  if (pendingRestoreScrollTop.value !== null) return;
+  if (scrollSaveTimer) clearTimeout(scrollSaveTimer);
+  scrollSaveKey = currentScrollContextKey();
+  scrollSaveTimer = setTimeout(() => {
+    scrollSaveTimer = null;
+    if (scrollSaveKey) setStoredScrollTop(scrollSaveKey, lastKnownScrollTop);
+  }, 250);
+}
+
+watch(
+  () => [libConfig._libraryId, libConfig.album.id, libConfig.album.folderPath],
+  (values, previousValues) => {
+    if (scrollSaveTimer) {
+      clearTimeout(scrollSaveTimer);
+      scrollSaveTimer = null;
+    }
+    scrollSaveKey = '';
+    if (!config.settings.grid.rememberScrollPosition) {
+      pendingRestoreScrollTop.value = null;
+      return;
+    }
+    const oldKey = previousValues ? scrollContextKey(previousValues) : '';
+    const newKey = scrollContextKey(values);
+    if (oldKey && lastKnownScrollTop > 0) {
+      setStoredScrollTop(oldKey, lastKnownScrollTop);
+    }
+    if (!newKey || newKey === oldKey) return;
+    const saved = getStoredScrollTop(newKey);
+    if (saved != null) {
+      pendingRestoreScrollTop.value = saved;
+      if (restorePendingTimer) clearTimeout(restorePendingTimer);
+      restorePendingTimer = setTimeout(() => {
+        restorePendingTimer = null;
+        if (pendingRestoreScrollTop.value === saved) pendingRestoreScrollTop.value = null;
+      }, 8000);
+    }
+  },
+);
+
 function handleGridScroll(event: any) {
   if (event && event.target) {
+    lastKnownScrollTop = event.target.scrollTop;
+    scheduleScrollSave();
     updateScrollPosition(
-        event.target.scrollTop, 
+        event.target.scrollTop,
         event.target.scrollHeight
     );
   }

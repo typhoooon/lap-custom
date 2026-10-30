@@ -17,6 +17,8 @@ export function normalizeGridSettings(grid: any): any {
   if (!grid || typeof grid !== 'object') return grid;
 
   grid.style = Math.round(clampSetting(grid.style, 0, 5, 0));
+  grid.rememberScrollPosition = grid.rememberScrollPosition !== false;
+  grid.perFolderSize = grid.perFolderSize === true;
 
   const balanced = grid.balanced && typeof grid.balanced === 'object' ? grid.balanced : {};
   grid.balanced = {
@@ -40,6 +42,7 @@ export function normalizeGridSettings(grid: any): any {
   grid.videoPreviewLoop = grid.videoPreviewLoop !== false;
   grid.videoPreviewVolume = clampSetting(grid.videoPreviewVolume, 0, 1, 0.8);
   grid.videoPreviewCountdown = grid.videoPreviewCountdown === true;
+  grid.videoPreviewProgressBar = grid.videoPreviewProgressBar !== false;
 
   return grid;
 }

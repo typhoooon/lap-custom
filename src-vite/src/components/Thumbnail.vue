@@ -206,17 +206,21 @@
           <span class="leading-none">{{ rawJpegPairBadge }}</span>
         </div>
         <template v-if="file.file_type === 2">
-          <button
+          <div
             v-if="isDynamicDurationPill"
-            type="button"
+            role="button"
+            tabindex="0"
             class="thumb-badge pointer-events-auto cursor-pointer select-none tabular-nums"
             :class="isPreviewPlaying ? 'text-base-content' : 'text-base-content/60'"
             :title="isPreviewPlaying ? t('settings.grid.video_pause_preview') : t('settings.grid.video_play_preview')"
             :aria-label="isPreviewPlaying ? t('settings.grid.video_pause_preview') : t('settings.grid.video_play_preview')"
+            :aria-pressed="isPreviewPlaying"
             @pointerenter="isDurationPillHovered = true"
             @pointerleave="isDurationPillHovered = false"
             @pointerdown.stop
             @click.stop="togglePreviewPlayback"
+            @keydown.enter.prevent.stop="togglePreviewPlayback"
+            @keydown.space.prevent.stop="togglePreviewPlayback"
             @dblclick.stop
             @contextmenu.stop
           >
@@ -225,13 +229,28 @@
             <span class="leading-none">{{ previewTimerLabel }}</span>
             <span
               class="inline-flex items-center overflow-hidden whitespace-nowrap transition-all duration-200 ease-out"
-              :class="isDurationPillHovered && containerWidth >= 96 ? 'max-w-24 opacity-100 ml-1' : 'max-w-0 opacity-0 ml-0'"
-              aria-hidden="true"
+              :class="isDurationPillHovered && containerWidth >= 240 ? 'max-w-56 opacity-100 ml-1' : 'max-w-0 opacity-0 ml-0'"
             >
+              <input
+                v-if="config.settings.grid.videoPreviewProgressBar && showVideoPreview"
+                type="range"
+                class="range range-xs range-primary mx-1 w-20"
+                min="0"
+                max="1"
+                step="0.001"
+                :value="previewProgress"
+                :tabindex="isDurationPillHovered ? 0 : -1"
+                :aria-label="t('settings.grid.video_preview_progress_bar')"
+                @pointerdown.stop
+                @click.stop
+                @dblclick.stop
+                @keydown.stop
+                @input="onPreviewProgressInput"
+              />
               <span class="mr-1 text-base-content/40">·</span>
               <span>{{ videoDurationBadge }}</span>
             </span>
-          </button>
+          </div>
           <div v-else class="thumb-badge">
             <template v-if="videoDurationBadge">{{ videoDurationBadge }}</template>
             <IconVideo v-else class="h-3.5 w-3.5 shrink-0" />
@@ -471,6 +490,12 @@ const previewTimerLabel = computed(() => {
     ? Math.max(0, total - current)
     : current;
   return formatDuration(Math.floor(seconds));
+});
+const previewProgress = computed(() => {
+  const total = previewDuration.value;
+  if (!total) return 0;
+  const current = Math.max(0, Math.min(total, Number(previewCurrentTime.value) || 0));
+  return current / total;
 });
 
 registerPreviewCandidate({
@@ -755,8 +780,9 @@ function handleVideoTimeUpdate(event: Event) {
   const video = event.target as HTMLVideoElement | null;
   if (!video) return;
   const time = Number(video.currentTime) || 0;
-  // The pill only shows whole seconds; avoid re-rendering on every timeupdate.
-  if (Math.floor(time) !== Math.floor(previewCurrentTime.value)) {
+  // timeupdate is already throttled by the browser; keep the progress thumb
+  // smooth without re-rendering for sub-50ms jitter.
+  if (Math.abs(time - previewCurrentTime.value) >= 0.05) {
     previewCurrentTime.value = time;
   }
 }
@@ -800,6 +826,22 @@ function togglePreviewPlayback() {
   if (!isAutoplayPreviewEnabled()) return;
   if (isPreviewPlaying.value) pausePreviewFromPill();
   else resumePreviewFromPill();
+}
+
+function onPreviewProgressInput(event: Event) {
+  const target = event.target as HTMLInputElement | null;
+  if (!target) return;
+  const fraction = Math.max(0, Math.min(1, Number(target.value)));
+  const video = previewVideoRef.value;
+  const total = previewDuration.value;
+  if (!video || !total) return;
+  const time = fraction * total;
+  try {
+    video.currentTime = time;
+  } catch {
+    // Seeking can fail while the source is still loading; keep the UI value.
+  }
+  previewCurrentTime.value = time;
 }
 
 let videoPreviewRequest = 0;

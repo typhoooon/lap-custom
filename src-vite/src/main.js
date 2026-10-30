@@ -162,6 +162,12 @@ if (isMainWindow) {
   listen('settings-gridScaling-changed', (event) => {
     config.setGridScaling(event.payload)
   })
+  listen('settings-gridRememberScrollPosition-changed', (event) => {
+    config.settings.grid.rememberScrollPosition = event.payload
+  })
+  listen('settings-gridPerFolderSize-changed', (event) => {
+    config.settings.grid.perFolderSize = event.payload
+  })
   listen('settings-gridThumbnailCorners-changed', (event) => {
     config.setGridThumbnailCorners(event.payload)
   })
