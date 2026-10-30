@@ -1,0 +1,71 @@
+{
+  "productName": "Lap Custom",
+  "version": "0.3.3-custom.1",
+  "identifier": "dev.typhoon.lapcustom",
+  "build": {
+    "beforeBuildCommand": "pnpm --dir ../src-vite build",
+    "beforeDevCommand": "pnpm --dir ../src-vite dev",
+    "devUrl": "http://localhost:3580",
+    "frontendDist": "../src-vite/dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "capabilities": [
+        "default"
+      ],
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$HOME/**",
+          "$PICTURES/**",
+          "$VIDEOS/**",
+          "$DOCUMENT/**",
+          "$DESKTOP/**",
+          "$DOWNLOAD/**",
+          "$APPCACHE/**",
+          "/Volumes/**",
+          "/media/**",
+          "/mnt/**",
+          "/run/media/**"
+        ]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "category": "Graphics and Design",
+    "targets": "all",
+    "createUpdaterArtifacts": false,
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ],
+    "resources": {
+      "resources/models/*": "models",
+      "resources/ffmpeg/*": "ffmpeg",
+      "../THIRD_PARTY_NOTICES.txt": "licenses/THIRD_PARTY_NOTICES.txt"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": []
+    }
+  }
+}

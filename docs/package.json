@@ -1,0 +1,19 @@
+{
+    "name": "lap-website",
+    "version": "1.0.0",
+    "description": "Website for Lap app",
+    "scripts": {
+        "dev": "vitepress dev",
+        "build:demo": "node scripts/build-native-demo.mjs",
+        "predev": "node scripts/build-native-demo.mjs",
+        "prebuild": "node scripts/build-native-demo.mjs",
+        "build": "vitepress build",
+        "test": "node --experimental-vm-modules --test tests/*.test.mjs",
+        "preview": "vitepress preview"
+    },
+    "devDependencies": {
+        "vitepress": "^1.0.0",
+        "vue": "^3.0.0"
+    },
+    "packageManager": "pnpm@9.0.0"
+}

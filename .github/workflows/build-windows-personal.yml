@@ -1,0 +1,114 @@
+name: Build Windows (personal)
+
+# Private-repo workflow for the personal Lap build.
+# It does not publish releases, uses no signing keys, and does not touch the
+# upstream repo or its release channels.
+
+on:
+  # Manual only for now: the Windows runtime issue is being diagnosed, so
+  # pushing should not start a build.
+  workflow_dispatch:
+
+permissions:
+  # Needed to create the versioned GitHub Release and attach the installer.
+  contents: write
+
+concurrency:
+  group: build-windows-personal-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TAURI_CLI_VERSION: '2.12.0'
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install frontend dependencies
+        working-directory: src-vite
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Cache AI models
+        id: cache-ai-models
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/resources/models
+          key: windows-models-${{ hashFiles('scripts/download_models.ps1') }}
+
+      - name: Download AI models
+        if: steps.cache-ai-models.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: .\scripts\download_models.ps1
+
+      - name: Download Windows FFmpeg sidecars
+        shell: pwsh
+        run: .\scripts\download_ffmpeg_sidecar.ps1 -Arch x64
+
+      - name: Build frontend
+        working-directory: src-vite
+        run: pnpm build
+
+      - name: Install pinned Tauri CLI
+        run: npm install -g @tauri-apps/cli@${{ env.TAURI_CLI_VERSION }}
+
+      - name: Build NSIS installer
+        # .github/tauri-ci.json clears beforeBuildCommand because the frontend
+        # was already built above.
+        run: tauri build --target x86_64-pc-windows-msvc --bundles nsis --config "${{ github.workspace }}/.github/tauri-ci.json"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: lap-custom-windows-x64
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v0.3.3-custom.1-build.${{ github.run_number }}
+          name: Lap Custom 0.3.3-custom.1 (build ${{ github.run_number }})
+          body: |
+            个人自用构建（非官方 Lap） / Personal build, not an official Lap release.
+
+            - 版本 / Version: 0.3.3-custom.1
+            - 提交 / Commit: ${{ github.sha }}
+            - 工作流 / Workflow run: ${{ github.run_number }}
+          files: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          fail_on_unmatched_files: true
+          make_latest: true

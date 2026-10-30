@@ -1,0 +1,15 @@
+.worktrees/
+.vscode/
+.workbuddy/
+.continue/
+.cargo/
+target/
+skills/
+.DS_Store
+.env
+dev.sh
+build.sh
+set_db_version.py
+set_version.py
+publish_release.sh
+release-downloads.sh
